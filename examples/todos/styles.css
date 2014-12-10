@@ -1,0 +1,131 @@
+body {
+	min-width: 320px;
+	background: #eee;
+}
+
+input[type="checkbox"] {
+	cursor: pointer;
+}
+
+.page-content {
+	padding: 15px;
+	background: #fff;
+	border-radius: 0 0 5px 5px;
+	-webkit-box-shadow: 0 0 6px rgba(44, 62, 80, .5);
+	box-shadow: 0 0 6px rgba(44, 62, 80, .5);
+	margin-bottom: 30px;
+}
+
+.page-header {
+	margin: 20px 0;
+	text-align: center;
+}
+
+.todos-toggle-all {
+	margin: 5px 0 0;
+}
+
+.todos {
+	margin: 15px 0;
+	padding: 0;
+	list-style: none;
+}
+
+.todos_item {
+	position: relative;
+	border-bottom: 1px solid #dce4ec;
+	padding: 0 47px 0 20px;
+}
+
+.todos_item:last-child {
+	border-bottom: 0;
+}
+
+.todos_item-toggle {
+	position: absolute;
+	top: 16px;
+	left: 0;
+	margin: 0 !important;
+}
+
+.todos_item-remove {
+	position: absolute;
+	top: 0;
+	right: 0;
+	opacity: 0;
+	line-height: 42px;
+	width: 42px;
+	height: 42px;
+	text-align: center;
+	-webkit-transition: opacity 0.2s, color 0.2s;
+	-moz-transition: opacity 0.2s, color 0.2s;
+	-o-transition: opacity 0.2s, color 0.2s;
+	transition: opacity 0.2s, color 0.2s;
+}
+
+.todos_item-title {
+	overflow: hidden;
+	padding: 7px 0;
+	font-size: 20px;
+	line-height: 28px;
+	word-break: break-word;
+
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.todos_item:hover .todos_item-remove {
+	opacity: .8;
+}
+
+.todos_item-remove:hover,
+.todos_item-remove:focus {
+	opacity: 1;
+	color: #2c3e50;
+}
+
+.todos_item-input {
+	display: none;
+	height: 42px;
+	padding-left: 20px;
+	padding-right: 20px;
+}
+
+.todos_item__editing {
+	padding: 0;
+}
+
+.todos_item__editing .todos_item-inner {
+	display: none;
+}
+
+.todos_item__editing .todos_item-input {
+	display: block;
+}
+
+.todos_item__completed .todos_item-title {
+	text-decoration: line-through;
+}
+
+.todos-footer {
+	margin: 0 -15px -15px;
+	padding: 6px 15px;
+	border-radius: 0 0 5px 5px;
+	background: #dce4ec;
+	border-top: 1px solid #c2d0de;
+}
+
+.todos-count {
+	line-height: 23px;
+}
+
+.todos-help {
+	text-align: center;
+	margin: 10px 0;
+	color: rgb(119, 119, 119);
+	text-shadow: rgba(255, 255, 255, 0.8) 0 1px 0;
+}
