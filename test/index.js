@@ -1,3 +1,9 @@
 'use strict';
 
-define(['view']);
+define(['view'], function() {
+	if (window.mochaPhantomJS) {
+		mochaPhantomJS.run();
+	} else {
+		mocha.run();
+	}
+});

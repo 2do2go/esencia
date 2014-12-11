@@ -28,7 +28,7 @@ define([
 				var el = sandboxManager.getSelector();
 				var view = new View({el: el});
 
-				expect(view.noel).to.not.be.ok;
+				expect(view.noel).to.not.be.ok();
 				expect(view.el).to.be.equal(sandboxManager.get(el).get(0));
 
 				sandboxManager.remove(el);
@@ -69,7 +69,7 @@ define([
 			it('should normalize nested views object', function() {
 				var view = new View({
 					views: {
-						'#non-array': new View,
+						'#non-array': new View(),
 						'#empty': []
 					}
 				});
@@ -139,6 +139,24 @@ define([
 				expect(view.views['#selector'][0]).to.be.equal(nestedView);
 			});
 
+			it('should prepend views array with method .prependViews()', function() {
+				var view = new View({
+					views: {
+						'#selector': [new View(), new View()]
+					}
+				});
+
+				var nestedView1 = new View();
+				var nestedView2 = new View();
+
+				view.prependViews([nestedView1, nestedView2], '#selector');
+
+				expect(view.views['#selector']).to.be.an('array');
+				expect(view.views['#selector']).to.have.length(4);
+				expect(view.views['#selector'][0]).to.be.equal(nestedView1);
+				expect(view.views['#selector'][1]).to.be.equal(nestedView2);
+			});
+
 			it('should append view with method .appendView()', function() {
 				var view = new View({
 					views: {
@@ -155,6 +173,62 @@ define([
 				expect(view.views['#selector'][2]).to.be.equal(nestedView);
 			});
 
+			it('should append views array with method .appendViews()', function() {
+				var view = new View({
+					views: {
+						'#selector': [new View(), new View()]
+					}
+				});
+
+				var nestedView1 = new View();
+				var nestedView2 = new View();
+
+				view.appendView([nestedView1, nestedView2], '#selector');
+
+				expect(view.views['#selector']).to.be.an('array');
+				expect(view.views['#selector']).to.have.length(4);
+				expect(view.views['#selector'][2]).to.be.equal(nestedView1);
+				expect(view.views['#selector'][3]).to.be.equal(nestedView2);
+			});
+
+			it('should insert view to specific position with method .insertView()',
+				function() {
+					var view = new View({
+						views: {
+							'#selector': [new View(), new View()]
+						}
+					});
+
+					var nestedView = new View();
+
+					view.insertView(nestedView, '#selector', 1);
+
+					expect(view.views['#selector']).to.be.an('array');
+					expect(view.views['#selector']).to.have.length(3);
+					expect(view.views['#selector'][1]).to.be.equal(nestedView);
+				}
+			);
+
+			it('should insert views array to specific position with method ' +
+				'.insertViews()', function() {
+					var view = new View({
+						views: {
+							'#selector': [new View(), new View()]
+						}
+					});
+
+					var nestedView1 = new View();
+					var nestedView2 = new View();
+
+					view.insertViews([nestedView1, nestedView2], '#selector', 1);
+
+					expect(view.views['#selector']).to.be.an('array');
+					expect(view.views['#selector']).to.have.length(4);
+					expect(view.views['#selector'][1]).to.be.equal(nestedView1);
+					expect(view.views['#selector'][2]).to.be.equal(nestedView2);
+				}
+			);
+
 			it.skip('should set view with method .setView()', function() {
 				var view = new View({
 					views: {
@@ -168,6 +242,50 @@ define([
 				expect(view.views['#selector']).to.be.an('array');
 				expect(view.views['#selector']).to.have.length(1);
 				expect(view.views['#selector'][0]).to.be.equal(nestedView);
+			});
+
+			it.skip('should replace views with method .setView()', function() {
+				var view = new View({
+					views: {
+						'#selector': [new View(), new View()]
+					}
+				});
+
+				var nestedView = new View();
+				view.replaceView(nestedView, '#selector');
+
+				expect(view.views['#selector']).to.be.an('array');
+				expect(view.views['#selector']).to.have.length(1);
+				expect(view.views['#selector'][0]).to.be.equal(nestedView);
+			});
+
+			it('should remove view by index with method .removeView()', function() {
+				var view = new View({
+					views: {
+						'#selector': [new View(), new View()]
+					}
+				});
+
+				view.removeView('#selector', 1);
+
+				expect(view.views['#selector']).to.be.an('array');
+				expect(view.views['#selector']).to.have.length(1);
+			});
+
+			it.skip('should remove views array with method .removeViews()', function() {
+				var nestedView1 = new View();
+				var nestedView2 = new View();
+
+				var view = new View({
+					views: {
+						'#selector': [nestedView1, new View(), nestedView2]
+					}
+				});
+
+				view.removeViews([nestedView1, nestedView2], '#selector');
+
+				expect(view.views['#selector']).to.be.an('array');
+				expect(view.views['#selector']).to.have.length(1);
 			});
 		});
 	});

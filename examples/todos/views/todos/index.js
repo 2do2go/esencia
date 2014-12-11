@@ -18,13 +18,11 @@ define([
 
 	function log(str) {
 		if (window.console && window.console.log) {
-			console.log('[DEBUG] ' + str);
+			window.console.log('[DEBUG] ' + str);
 		}
 	}
 
 	View.initialize = function() {
-		var self = this;
-
 		this.updateList();
 
 		this.updateFooter();
@@ -85,7 +83,7 @@ define([
 			this.$toggleAll.prop('checked', false);
 			this.$todosWrap.hide();
 		}
-	}
+	};
 
 	View.updateList = function() {
 		log(

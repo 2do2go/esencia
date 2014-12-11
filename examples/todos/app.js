@@ -1,12 +1,10 @@
 'use strict';
 
 require([
-	'esencia/router', 'controllers/layout', 'controllers/todos', 'esencia/debugger'
+	'esencia/router', 'controllers/layout', 'controllers/todos'
 ], function(
-	Router, LayoutController, TodosController, Debugger
+	Router, LayoutController, TodosController
 ) {
-	new Debugger
-
 	var router = new Router({
 		autoloadModules: false
 	});

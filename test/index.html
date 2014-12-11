@@ -15,19 +15,9 @@
 			mocha.reporter('html');
 		</script>
 
-		<!-- configure require.js -->
+		<!-- configure require.js and run tests -->
 		<script src="http://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.15/require.min.js"></script>
 		<script src="./config.js"></script>
-
-		<!-- require and run tests -->
-		<script>
-			require(['index'], function() {
-				if (window.mochaPhantomJS) {
-					mochaPhantomJS.run();
-				} else {
-					mocha.run();
-				}
-			});
-		</script>
+		<script>require(['index']);</script>
 	</body>
 </html>
