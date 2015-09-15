@@ -229,7 +229,7 @@ define([
 				}
 			);
 
-			it.skip('should set view with method .setView()', function() {
+			it('should set view with method .setView()', function() {
 				var view = new View({
 					views: {
 						'#selector': [new View(), new View()]
@@ -244,7 +244,24 @@ define([
 				expect(view.views['#selector'][0]).to.be.equal(nestedView);
 			});
 
-			it.skip('should replace views with method .setView()', function() {
+			it('should set views array with method .setViews()', function() {
+				var view = new View({
+					views: {
+						'#selector': [new View(), new View()]
+					}
+				});
+
+				var nestedView1 = new View();
+				var nestedView2 = new View();
+				view.setViews([nestedView1, nestedView2], '#selector');
+
+				expect(view.views['#selector']).to.be.an('array');
+				expect(view.views['#selector']).to.have.length(2);
+				expect(view.views['#selector'][0]).to.be.equal(nestedView1);
+				expect(view.views['#selector'][1]).to.be.equal(nestedView2);
+			});
+
+			it('should replace views with method .replaceView()', function() {
 				var view = new View({
 					views: {
 						'#selector': [new View(), new View()]
@@ -257,6 +274,21 @@ define([
 				expect(view.views['#selector']).to.be.an('array');
 				expect(view.views['#selector']).to.have.length(1);
 				expect(view.views['#selector'][0]).to.be.equal(nestedView);
+			});
+
+			it('should replace view by index with method .replaceView()', function() {
+				var view = new View({
+					views: {
+						'#selector': [new View(), new View(), new View()]
+					}
+				});
+
+				var nestedView = new View();
+				view.replaceView(nestedView, '#selector', 1);
+
+				expect(view.views['#selector']).to.be.an('array');
+				expect(view.views['#selector']).to.have.length(3);
+				expect(view.views['#selector'][1]).to.be.equal(nestedView);
 			});
 
 			it('should remove view by index with method .removeView()', function() {
@@ -272,7 +304,7 @@ define([
 				expect(view.views['#selector']).to.have.length(1);
 			});
 
-			it.skip('should remove views array with method .removeViews()', function() {
+			it('should remove views array with method .removeViews()', function() {
 				var nestedView1 = new View();
 				var nestedView2 = new View();
 
