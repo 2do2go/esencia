@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Esencia + CommonJS + nw.js Todo Example</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+		<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.0/css/bootstrap.min.css">
+		<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.0/flatly/bootstrap.min.css">
+
+		<link rel="stylesheet" href="./styles.css">
+	</head>
+	<body>
+		<div id="app"></div>
+
+		<script id="tmpl-layout" type="text/html">
+			<div class="container">
+				<div class="row">
+					<div class="col-sm-10 col-sm-push-1 col-md-8 col-md-push-2" id="content"></div>
+				</div>
+			</div>
+		</script>
+
+		<script id="tmpl-todos" type="text/html">
+			<div>
+				<div class="page-content">
+					<header><h1 class="page-header">Todos</h1></header>
+
+					<section>
+						<input id="new-todo-title" type="text" class="form-control input-lg" placeholder="What needs to be done?">
+
+						<div id="todos-wrap"<% print(todosCount ? '' : ' style="display: none;"') %>>
+							<div class="checkbox todos-toggle-all"><label><input id="toggle-all" type="checkbox"> Mark all as complete</label></div>
+							<ul id="todos" class="todos"></ul>
+							<div id="todos-footer"></div>
+						</div>
+					</section>
+				</div>
+
+				<div class="todos-help">Double-click to edit a todo.</div>
+			</div>
+		</script>
+
+		<script id="tmpl-todos-item" type="text/html">
+			<li class="js-item todos_item<% print(todo.completed ? ' todos_item__completed' : '') %>">
+				<div class="todos_item-inner">
+					<input type="checkbox" class="js-item-toggle todos_item-toggle"<% print(todo.completed ? ' checked' : '') %>>
+					<div class="js-item-title todos_item-title"><% print(todo.title) %></div>
+					<a href="javascript:void(0);" class="js-item-remove todos_item-remove" title="Remove item"><i class="glyphicon glyphicon-trash"></i></a>
+				</div>
+				<input type="text" class="js-item-input form-control todos_item-input" value="<% print(todo.title) %>">
+			</li>
+		</script>
+
+		<script id="tmpl-todos-footer" type="text/html">
+			<footer class="todos-footer bg-default clearfix">
+				<div class="todos-count pull-left"><strong><% print(left) %></strong> items left</div>
+				<% if (completed) { %><button id="clear-completed" type="button" class="btn btn-primary btn-xs pull-right">Clear <strong><% print(completed) %></strong> completed item</button><% } %>
+			</footer>
+		</script>
+
+		<script src="index.js"></script>
+	</body>
+</html>

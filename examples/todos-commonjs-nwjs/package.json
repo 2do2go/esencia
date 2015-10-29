@@ -1,0 +1,13 @@
+{
+  "name": "esencia-todos-commonjs-nwjs",
+  "version": "1.0.0",
+  "description": "Esencia + CommonJS + nw.js Todo Example",
+  "main": "index.html",
+  "dependencies": {
+    "jquery": "1.11.1",
+    "nw": "0.12.2"
+  },
+  "scripts": {
+    "nw": "node_modules/.bin/nw"
+  }
+}
