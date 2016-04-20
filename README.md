@@ -5,7 +5,7 @@ JavaScript framework based on Backbone.js. Extends Backbone router, controller, 
 * grouping controllers in modules
 * define controller workflow
 * add defaultUrlParams to controller
-* etc...
+* etc.
 
 Work in progress...
 
@@ -35,7 +35,7 @@ define([
 
 
 ## Router
-### Router.constructor
+### Router.constructor(options)
 Router constructor have one argument - hash of options. There are following options:
 
 * `root`
@@ -79,6 +79,8 @@ Router constructor have one argument - hash of options. There are following opti
 
 * `config`
 
+	default: `{}`
+
 	...
 
 * `onModuleError`
@@ -88,7 +90,7 @@ Router constructor have one argument - hash of options. There are following opti
 #### Router.constructor example
 ```javascript
 require([
-	'essencia/router'
+	'esencia/router'
 ], function(
 	Router
 ) {
@@ -107,7 +109,7 @@ require([
 ```
 
 
-### Router.controller
+### Router.controller(controller, options)
 
 `Router.controller` method add controller to current router to provide functionality of url that specified in controller. `Router.controller` have two arguments:
 
@@ -124,7 +126,7 @@ require([
 #### Router.controller example
 ```javascript
 require([
-	'essencia/router',
+	'esencia/router',
 	'controllers/layout'
 ], function(
 	Router, layoutController
@@ -143,25 +145,121 @@ require([
 ```
 
 
-### Router.controllers
+### Router.controllers(controllers)
 
 `Router.controllers` receiving in arguments array of controllers to run `Router.controller` for each of them.
 
 **Note:** `Router.controllers` do not pass options when add controllers to router.
 
 
-### Router.start
+### Router.start()
 
 `Router.start` method using for starting routes handling.
 
 
-### Router.navigate
+### Router.navigate(fragment, options)
+
+`Router.navigate` using for correct navigating between application urls. First argument is `fragment` - destination url (`root` part will be removed if `fragment` starts with `root`). Second argument is hash of options. There are following options:
+
+* `force`
+
+	default: `false`
+
+	if `true` than router will navigate to `nowhereUrl` (`___`) before navigate to `fragment`. This trick is using to go to the selected fragment even if it equal to current and to rerender all views that was changed (by default only view of current controller will be rerendered).
+
+* `qs`
+
+	query string object that will be stringified and added to `fragment` using `toFragment` from `backbone.queryparams`.
+
+Also `options` can include `trigger` (default: `true`) and `replace` (default: `false`) that described in [Backbone documentation](http://backbonejs.org/#Router-navigate)
+
+#### Router.navigate example
+```javascript
+router.navigate('/users', {
+	force: true,
+	qs: {
+		search: 'username'
+	}
+});
+// router will navigate to '/app/users?search=username' if router.root === '/app'
+```
+
+
+## Controller
+
+Controller in Esencia is using for preparing data and build chain of views in depends of url. 
+
+### Controller.contructor(options)
+
+`Controller.contructor` have only one argument - hash of options. There are following options:
+
+* name
+
+* parentName
+
+* models
+
+* collections
+
+* viewOptions
+
+* defaultUrlParams
+
+#### Controller.contructor example
+```javascript
+define([
+	'esencia/controller',
+	'views/users'
+], function(ParentController, View) {
+	var Controller = {
+		name: 'users',
+
+		// layout controller was created before
+		parentName: 'layout',
+
+		View: View
+	};
+
+	// other operations with controller
+
+	// Controller hash must be extended with Esencia controller
+	return ParentController.extend(Controller);
+});
+```
+
+
+### Controller.prepare(callback)
+
+`Controller.prepare` using to fetch collections and models data. `callback` must be called after end of all preparing operations (is nescesary for sync operation? ... ).
+
+#### Controller.prepare example
+```javascript
+define([
+	'esencia/controller',
+	'views/users',
+	'collections/users'
+], function(ParentController, View, UsersCollection) {
+	// some code for create controller
+
+	Controller.prepare = function(callback) {
+		this.collections = {
+			users: new UsersCollection()
+		};
+
+		this.collections.users.fetch({
+			success: callback
+		});
+	};
+
+	return ParentController.extend(Controller);
+});
+```
+
+
 
 
 
 To be continued...
-
-
 
 
 ## License
