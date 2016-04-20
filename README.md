@@ -2,9 +2,11 @@
 
 JavaScript framework based on Backbone.js. Extends Backbone router, controller, view and collections. Add some features, e.g.:
 
+* router features
+* controller
 * grouping controllers in modules
-* define controller workflow
-* add defaultUrlParams to controller
+* components (nested views) 
+* debuggermmmp
 * etc.
 
 Work in progress...
@@ -40,38 +42,39 @@ Router constructor have one argument - hash of options. There are following opti
 
 * `root`
 
-	default: `'/'`
+	*string*, default: `'/'`
 
-	root url for router.
+	Root url for router.
 
 * `modulesPath`
 
-	default: `'modules/'`
+	*string*, default: `'modules/'`
 
-	path for folder with your modules.
+	Path for folder with your modules.
 
 * `defaultModuleName`
 
-	default: `'main'`
+	*string*, default: `'main'`
 
-	name for module that will loaded if Esencia cannot extract module name from url. Usualy `defaultModuleName` is a name of module for controller that provide functionality of router root url.
+	Name for module that will loaded if Esencia cannot extract module name from url. Usualy `defaultModuleName` is a name of module for controller that provide functionality of router root url.
 
 * `pushState`
 
-	default: `false`
+	*boolean*, default: `false`
 
-	define if router will use pushstate to manage browser navigation history.
+	Define if router will use pushstate to manage browser navigation history.
 
 * `namedParameters`
 
-	default: `false`
+	*boolean*, default: `false`
 
+	...
 
 * `autoloadModules`
 
-	default: `true`
+	*boolean*, default: `true`
 
-	if `true` than Esencia will automaticaly try to load module to get controller for current url.
+	If `true` than Esencia will automaticaly try to load module to get controller for current url.
 
 * `debug`
 
@@ -79,11 +82,13 @@ Router constructor have one argument - hash of options. There are following opti
 
 * `config`
 
-	default: `{}`
+	*object*, default: `{}`
 
 	...
 
 * `onModuleError`
+
+	*function*
 
 	RequireJS `define` error callback to provide error handling of loading modules. Details in [RequireJS documentation](http://requirejs.org/docs/api.html#errbacks)
 
@@ -106,6 +111,7 @@ require([
 			// or something else
 		}
 	});
+});
 ```
 
 
@@ -115,11 +121,11 @@ require([
 
 * `controller`
 
-	instance of controller that will be added to router
+	Instance of controller that will be added to router
 
 * `options`
 
-	default: `{}`
+	*object*, default: `{}`
 
 	Optional argument ...
 
@@ -163,13 +169,15 @@ require([
 
 * `force`
 
-	default: `false`
+	*boolean*, default: `false`
 
-	if `true` than router will navigate to `nowhereUrl` (`___`) before navigate to `fragment`. This trick is using to go to the selected fragment even if it equal to current and to rerender all views that was changed (by default only view of current controller will be rerendered).
+	If `true` than router will navigate to `nowhereUrl` (`'___'`) before navigate to `fragment`. This trick is using to go to the selected fragment even if it equal to current and to rerender all views that was changed (by default only view of current controller will be rerendered).
 
 * `qs`
 
-	query string object that will be stringified and added to `fragment` using `toFragment` from `backbone.queryparams`.
+	*object*
+
+	Query string object that will be stringified and added to `fragment` using `toFragment` from `backbone.queryparams`.
 
 Also `options` can include `trigger` (default: `true`) and `replace` (default: `false`) that described in [Backbone documentation](http://backbonejs.org/#Router-navigate)
 
@@ -187,23 +195,60 @@ router.navigate('/users', {
 
 ## Controller
 
-Controller in Esencia is using for preparing data and build chain of views in depends of url. 
+Controller in Esencia is using for preparing data and build chain of views in depends of url. Controller have multiple stage workflow. By default when controller is processed in case of url mathcing there are next stages:
+
+`prepare` -> `view` -> `render`
+
+If controller is already prepared and contorller's view is initialized than processing of controller has only one stage:
+
+`renderOnly`
+
 
 ### Controller.contructor(options)
 
 `Controller.contructor` have only one argument - hash of options. There are following options:
 
-* name
+* `url`
 
-* parentName
+	*string*
 
-* models
+	Url or url regex which functionality will be provided by this instance of Esencia `Controller`.
 
-* collections
+* `name`
 
-* viewOptions
+	*string*
 
-* defaultUrlParams
+	Name of the controller. Must be unique.
+
+* `parentName`
+
+	*string*
+
+	Name of parent controller in chain of controllers.
+
+* `models`
+
+	*object*, default: `{}`
+
+	Hash of Backbone model instances for storing data and using in views.
+
+* `collections`
+
+	*object*, default: `{}`
+
+	Hash of Esencia collection instances for storing data and using in views.
+
+* `viewOptions`
+
+	*object*, default: `{}`
+
+	Hash of default options that will be applied to context of current controller view.
+
+* `defaultUrlParams`
+
+	*object*, default: `{}`
+
+	Hash of default url params that will be applied when Router navigating to url of this controller.
 
 #### Controller.contructor example
 ```javascript
@@ -230,7 +275,9 @@ define([
 
 ### Controller.prepare(callback)
 
-`Controller.prepare` using to fetch collections and models data. `callback` must be called after end of all preparing operations (is nescesary for sync operation? ... ).
+`Controller.prepare` usualy using to fetch collections and models data. `Controller.prepare` implementing `prepare` stage of controller processing. Argument `callback` is a function that must be called after end of all preparing operations.
+
+**Note:** `callback` must be called even if prepare operations are syncronous.
 
 #### Controller.prepare example
 ```javascript
@@ -254,8 +301,6 @@ define([
 	return ParentController.extend(Controller);
 });
 ```
-
-
 
 
 
