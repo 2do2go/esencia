@@ -195,11 +195,11 @@ router.navigate('/users', {
 
 ## Controller
 
-Controller in Esencia is using for preparing data and build chain of views in depends of url. Controller have multiple stage workflow. By default when controller is processed in case of url mathcing there are next stages:
+Controller in Esencia is using for preparing data and build chain of views in depends of url. Controller have multiple stage workflow. By default when controller is processed in case of url matching there are next stages:
 
 `prepare` -> `view` -> `render`
 
-If controller is already prepared and contorller's view is initialized than processing of controller has only one stage:
+If controller is already prepared and contorller's view is attached than processing of controller has only one stage:
 
 `renderOnly`
 
@@ -301,6 +301,81 @@ define([
 	return ParentController.extend(Controller);
 });
 ```
+
+
+## View
+
+Esencia `View` extends Backbone `View` and add methods to manage nested views and handle render action.
+
+
+### View.constructor(options)
+
+There are following options:
+
+* el
+
+
+### View.initialize()
+
+`View.initialize` is usualy using for set nested views. By default `View.initialize` is empty.
+
+
+### View.render(options)
+
+There are following options:
+
+* force
+
+	*Boolean*, default: `false`
+
+	Will rerender views if `true` and view data was changed (see `View.isUnchanged`).
+
+
+### View.afterRender()
+
+`View.afterRender` is usualy using for set jQuery components and some other actions that must to be executed exactly after render view template. By default `View.afterRender` is empty.
+
+
+### View.beforeDetach()
+
+`View.beforeDetach` is usualy using for make some actions before view will be detached from DOM. By default `View.beforeDetach` is empty.
+
+
+### View.getData()
+
+### View.setData(data)
+
+### View.isUnchanged(data)
+
+
+### View.setView(views, selector, index)
+
+View.setViews(views, selector, index)
+
+### View.appendView(views, selector)
+
+View.appendViews(views, selector)
+
+### View.prependView(views, selector)
+
+View.prependViews(views, selector)
+
+### View.insertView(views, selector, index)
+
+View.insertViews(views, selector, index)
+
+### View.removeView(views, selector, index)
+
+View.removeViews(views, selector, index)
+
+**Note:** need `View.remove()` to remove view elements from DOM
+
+
+### View.getView(selector, index)
+
+### View.getViews(selector)
+
+### View.getClosestView(selector)
 
 
 
