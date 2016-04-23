@@ -42,37 +42,37 @@ Router constructor have one argument - hash of options. There are following opti
 
 * `root`
 
-	*string*, default: `'/'`
+	*String*, default: `'/'`
 
 	Root url for router.
 
 * `modulesPath`
 
-	*string*, default: `'modules/'`
+	*String*, default: `'modules/'`
 
 	Path for folder with your modules.
 
 * `defaultModuleName`
 
-	*string*, default: `'main'`
+	*String*, default: `'main'`
 
 	Name for module that will loaded if Esencia cannot extract module name from url. Usualy `defaultModuleName` is a name of module for controller that provide functionality of router root url.
 
 * `pushState`
 
-	*boolean*, default: `false`
+	*Boolean*, default: `false`
 
 	Define if router will use pushstate to manage browser navigation history.
 
 * `namedParameters`
 
-	*boolean*, default: `false`
+	*Boolean*, default: `false`
 
 	...
 
 * `autoloadModules`
 
-	*boolean*, default: `true`
+	*Boolean*, default: `true`
 
 	If `true` than Esencia will automaticaly try to load module to get controller for current url.
 
@@ -82,7 +82,7 @@ Router constructor have one argument - hash of options. There are following opti
 
 * `config`
 
-	*object*, default: `{}`
+	*Object*, default: `{}`
 
 	...
 
@@ -125,9 +125,15 @@ require([
 
 * `options`
 
-	*object*, default: `{}`
+	*Object*, default: `{}`
 
-	Optional argument ...
+	Hash of options. There are following options:
+
+	* `process`
+
+		*Boolean*, default: `false`
+
+		Process controller in force mode (without matching url).
 
 #### Router.controller example
 ```javascript
@@ -169,15 +175,15 @@ require([
 
 * `force`
 
-	*boolean*, default: `false`
+	*Boolean*, default: `false`
 
 	If `true` than router will navigate to `nowhereUrl` (`'___'`) before navigate to `fragment`. This trick is using to go to the selected fragment even if it equal to current and to rerender all views that was changed (by default only view of current controller will be rerendered).
 
 * `qs`
 
-	*object*
+	*Object*
 
-	Query string object that will be stringified and added to `fragment` using `toFragment` from `backbone.queryparams`.
+	Query string hash that will be stringified and added to `fragment` using `toFragment` from `backbone.queryparams`.
 
 Also `options` can include `trigger` (default: `true`) and `replace` (default: `false`) that described in [Backbone documentation](http://backbonejs.org/#Router-navigate)
 
@@ -210,43 +216,43 @@ If controller is already prepared and contorller's view is attached than process
 
 * `url`
 
-	*string*
+	*String*
 
 	Url or url regex which functionality will be provided by this instance of Esencia `Controller`.
 
 * `name`
 
-	*string*
+	*String*
 
 	Name of the controller. Must be unique.
 
 * `parentName`
 
-	*string*
+	*String*
 
 	Name of parent controller in chain of controllers.
 
 * `models`
 
-	*object*, default: `{}`
+	*Object*, default: `{}`
 
 	Hash of Backbone model instances for storing data and using in views.
 
 * `collections`
 
-	*object*, default: `{}`
+	*Object*, default: `{}`
 
 	Hash of Esencia collection instances for storing data and using in views.
 
 * `viewOptions`
 
-	*object*, default: `{}`
+	*Object*, default: `{}`
 
 	Hash of default options that will be applied to context of current controller view.
 
 * `defaultUrlParams`
 
-	*object*, default: `{}`
+	*Object*, default: `{}`
 
 	Hash of default url params that will be applied when Router navigating to url of this controller.
 
@@ -307,7 +313,58 @@ define([
 
 Esencia `View` extends Backbone `View` and add methods to manage nested views and handle render event.
 
-Every View instance has `this.views` hash that contains all nested views. Every `this.views` key is selector of element to which attached views, value is array of views. 
+Esencia `View` instances have following attributes:
+
+* `models`
+
+	*Object*
+
+	Hash of data models that was created and fetched in `Controller.prepare` or passed to `options` argument of `View.constructor`.
+
+* `collections`
+
+	*Object*
+
+	Hash of data collections that was created and fetched in `Controller.prepare` or passed to `options` argument of `View.constructor`.
+
+* `data`
+
+	*Object*, default `{}`
+
+	Inner view data that will be passed to template render function.
+
+* `views`
+
+	*Object*
+
+	Every View instance has `this.views` hash that contains all nested views. Every `this.views` key is selector of element to which attached views, value is array of views.
+
+	**Note:** Hereinafter will call value of every `this.views` item *views group*.
+
+* `events`
+
+	*Object*, default: `{}`
+
+	Hash of view events that described in [Backbone documentation](http://backbonejs.org/#View-events).
+
+* `viewsEvents`
+
+	*Object*, default: `{}`
+
+	Analog of `views.events` to handle nested views events. Selector in `this.viewsEvents` must to be the same as selector of views group which event you need to handle.
+
+* `urlParams`
+
+	*Object*
+
+	Current `urlParams` from `Router`.
+
+* `templateHelpers`
+
+	*Object*, default: `{}`
+
+	`View.templateHelpers` is hash of helper functions or data that will be used in templates. When template is rendering `View.templateHelpers` extends by `this.data` of rendering view.
+
 
 
 ### View.constructor(options)
@@ -318,7 +375,7 @@ There are following options:
 
 	*element*
 
-	If `el` is not present in `options` hash than `this.noel` will be setted to `true`.
+	If `el` is not present in `options` hash than `this.noel` will be setted to `true`. Usualy you don't need to pass 
 
 * `data`
 	
@@ -326,12 +383,15 @@ There are following options:
 
 	Data that will be setted to `this.data` and than passed to template render function.
 
+* `models`, `collections`
 
-### View.templateHelpers
+	*Object*
 
-`View.templateHelpers` is hash of helper functions or data that will be used in templates. When template is rendering `View.templateHelpers` extends by `this.data` of rendering view. 
+	Value of this options will be setted to `this.models` and `this.collections` of created view respectively.
 
-By default `View.templateHelpers` is `{}`.
+#### View.constructor example
+
+...
 
 
 ### View.initialize()
@@ -372,6 +432,10 @@ By default `View.beforeDetach` is empty.
 
 By default `View.getData` return `this.data`. You can set you value to `this.data` by calling `View.setData(data)` (see `View.setData`).
 
+#### View.getData example
+
+...
+
 
 ### View.setData(data)
 
@@ -387,6 +451,10 @@ If you want to set data to nested views you must specify `View.setData` in curre
 
 By default if `View.setData` will be called without arguments it will do nothig. And if it will be called with `data` argument it will set `data` to `this.data`.
 
+#### View.setData example
+
+...
+
 
 ### View.isUnchanged(data)
 
@@ -397,13 +465,9 @@ By default `View.isUnchanged` return `true`. It means that view will not be rere
 **Note:** also you can use `View.render({force: true})` to rerender current and all nested views independent from they `View.isUnchanged` results.
 
 
-### View.setView(views, selector, index)
+### Manage nested views
 
-*Alias:* View.setViews(views, selector, index)
-
-`View.setView` is using for creating nested views. Nested views will be attached to DOM element that apply `selector`. One DOM element may contain many views.
-
-Arguments:
+This methods is using for get, set and remove nested views. Their have all or several of following arguments:
 
 * `views`
 	
@@ -415,37 +479,44 @@ Arguments:
 
 	*String*
 
-	Selector to find DOM element for attach views. It may be any jQuery selector but id is recommended.
+	Selector to find DOM element for attach views. It may be any jQuery selector but *id* is recommended.
 
 * `index`
 
 	*Number*
 
-	Optional argument. Index of view to replace. If index is passed it replace only one view with index in views group.
+	Index of view to replace. If index is passed it replace only one view with index in views group.
 
 
-### View.appendView(views, selector)
+#### View.setView(views, selector, index)
+
+*Alias:* View.setViews(views, selector, index)
+
+`View.setView` is using for creating nested views. Nested views will be inserted in existent `selector` views gropup or create new.
+
+
+#### View.appendView(views, selector)
 
 *Alias:* View.appendViews(views, selector)
 
-Append `views` to DOM element that apply `selector`. `View.appendView` is alias for `View.insertView` without `index` argument.
+Append `views` to `selector` views group. `View.appendView` is alias for `View.insertView` without `index` argument.
 
 
-### View.prependView(views, selector)
+#### View.prependView(views, selector)
 
 *Alias:* View.prependViews(views, selector)
 
-Prepend `views` to DOM element that apply `selector`.
+Prepend `views` to `selector` views group.
 
 
-### View.insertView(views, selector, index)
+#### View.insertView(views, selector, index)
 
 *Alias:* View.insertViews(views, selector, index)
 
 `View.insertView` insert `views` to specified `index` of views group. If index is not passed views will `View.insertView` append to end of views group. If there are no views on `selector` `View.insertView` will just set `views` no matter what value `index` is.
 
 
-### View.removeView(views, selector, index)
+#### View.removeView(views, selector, index)
 
 *Alias:* View.removeViews(views, selector, index)
 
@@ -468,30 +539,35 @@ Usage:
 * rerender parent view with `{force: true}`. This way is not recomended because it may cause performance problems.
 
 
-### View.remove()
+#### View.remove()
 
 `View.remove` remove view from DOM.
 
 
-### View.getView(selector, index)
+#### View.getView(selector, index)
 
 `View.getView` return first or `index` view from `selector` views group or `null` if there are no views attached to `selector` element.
 
 
-### View.getViews(selector)
+#### View.getViews(selector)
 
 `View.getViews` return views group of `selector` or `null` if there are no views attached to `selector` element.
 
 
-### View.getClosestView()
+#### View.getClosestView()
 
 `View.getClosestView` return view that attached to closest element with class `.view-attached`.
+
+
+#### Manage nested views example
+
+... 
 
 
 
 ## Collection
 
-Esencia `Collection` extends Backbone `Collection` - override `Collection.sync` method and add `Collection.exec` method for custom non-REST queries.
+Esencia `Collection` extends Backbone `Collection` - override `Collection.sync` method and add `Collection.exec`.
 
 ### Collection.exec()
 
