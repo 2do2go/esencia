@@ -307,14 +307,24 @@ define([
 
 Esencia `View` extends Backbone `View` and add methods to manage nested views and handle render event.
 
+Every View instance has `this.views` hash that contains all nested views. Every `this.views` key is selector of element to which attached views, value is array of views. 
+
 
 ### View.constructor(options)
 
 There are following options:
 
-* el
+* `el`
 
-	...
+	*element*
+
+	If `el` is not present in `options` hash than `this.noel` will be setted to `true`.
+
+* `data`
+	
+	*Object*, default: `{}`
+
+	Data that will be setted to `this.data` and than passed to template render function.
 
 
 ### View.templateHelpers
@@ -478,7 +488,15 @@ Usage:
 `View.getClosestView` return view that attached to closest element with class `.view-attached`.
 
 
-To be continued...
+
+## Collection
+
+Esencia `Collection` extends Backbone `Collection` - override `Collection.sync` method and add `Collection.exec` method for custom non-REST queries.
+
+### Collection.exec()
+
+Exec custom non-REST method on collection. It trigger `exec:[method]` event after success collection sync.
+
 
 
 ## License
