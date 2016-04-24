@@ -64,17 +64,17 @@ Router constructor have one argument - hash of options. There are following opti
 
 	Define if router will use pushstate to manage browser navigation history.
 
-* `namedParameters`
-
-	*Boolean*, default: `false`
-
-	...
-
 * `autoloadModules`
 
 	*Boolean*, default: `true`
 
 	If `true` than Esencia will automaticaly try to load module to get controller for current url.
+
+* `namedParameters`
+
+	*Boolean*, default: `false`
+
+	...
 
 * `debug`
 
@@ -390,8 +390,42 @@ There are following options:
 	Value of this options will be setted to `this.models` and `this.collections` of created view respectively.
 
 #### View.constructor example
+```javascript
+define('exampleView', [
+	'underscore', 'esencia/view'
+], function(_, BasicView) {
+	var View = {
+		template: _.template('<div class="actionButton"> <%= title %> </div>'),
+		events: {
+			'click .actionButton': 'onActionButtonClick'
+		}
+	};
 
-...
+	View.onActionButtonClick = function(event) {
+		// some code for handle action
+	};
+
+	View.getData = function() {
+		return {
+			title: 'Button'
+		}
+	};
+
+	return BasicView.extend(View);
+});
+
+define('exampleController', [
+	'esencia/controller', `exampleView`
+], function(BasicController, ExampleView) {
+	var Controller = {
+		url: '',
+		view: ExampleView
+	}
+
+	return BasicController.extend(Controller);
+});
+
+```
 
 
 ### View.initialize()
@@ -432,14 +466,8 @@ By default `View.beforeDetach` is empty.
 
 By default `View.getData` return `this.data`. You can set you value to `this.data` by calling `View.setData(data)` (see `View.setData`).
 
-#### View.getData example
-
-...
-
 
 ### View.setData(data)
-
-`View.setData` using for set data to nested views. 
 
 `View.setData` using for two purposes:
 
@@ -452,8 +480,53 @@ If you want to set data to nested views you must specify `View.setData` in curre
 By default if `View.setData` will be called without arguments it will do nothig. And if it will be called with `data` argument it will set `data` to `this.data`.
 
 #### View.setData example
+```javascript
+define('exampleNestedView', [
+	'underscore', 'esencia/view'
+], function(_, BasicView) {
 
-...
+	var View = {
+		template: _.template('<div><%= title %></div>'),
+	};
+
+	return BasicView.extend(View);
+});
+
+define('exampleView', [
+	'underscore', 'esencia/view', 'exampleNestedView'
+], function(_, BasicView, ExampleNestedView) {
+	var templateString = '<div id="nestedViewContainer"></div>';
+
+	var View = {
+		template: _.template(templateString),
+	};
+
+	View.initialize = function() {
+		this.setView(new ExampleNestedView(), '#nestedViewContainer');
+	};
+
+	View.setData = function() {
+		this.getView('#nestedViewContainer').setData({
+			// data for nested view will be setted every time
+			// when current view rendering
+			title: 'Title'
+		});
+	};
+
+	return BasicView.extend(View);
+});
+
+define('exampleController', [
+	'esencia/controller', `exampleView`
+], function(BasicController, ExampleView) {
+	var Controller = {
+		url: '',
+		view: ExampleView
+	}
+
+	return BasicController.extend(Controller);
+});
+```
 
 
 ### View.isUnchanged(data)
@@ -561,7 +634,7 @@ Usage:
 
 #### Manage nested views example
 
-... 
+See manage nested views example in [`examples/todos`](examples/todos)
 
 
 
@@ -572,6 +645,47 @@ Esencia `Collection` extends Backbone `Collection` - override `Collection.sync` 
 ### Collection.exec()
 
 Exec custom non-REST method on collection. It trigger `exec:[method]` event after success collection sync.
+
+#### Collection.exec example
+```javascript
+define('userView', [
+	'underscore', 'esencia/view'
+], function(_, BasicView) {
+	var templateString = '<ul><% _.each(users, function(user) { %>' +
+		'<li class="resetPasswordButton" data-id="<%= user.id %>">' +
+		'Reset <%= user.name %> password' +
+		'</li>' +
+		'<% }) %></ul>';
+
+	var View = {
+		template: _.template(templateString),
+		events: {
+			'click .resetPasswordButton': 'onPasswordReset'
+		}
+	};
+
+	View.onPasswordReset = function(event) {
+		var id = this.$(event.currentTarget).data('id');
+		this.collections.users.exec('resetpassword', {
+			data: {
+				id: id
+			},
+			success: function() {
+				// handle success password reset
+			}
+		});
+	};
+
+	View.getData = function() {
+		return {
+			users: this.collections.users.toJSON()
+		}
+	};
+
+	return BasicView.extend(View);
+});
+
+```
 
 
 
