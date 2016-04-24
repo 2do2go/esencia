@@ -6,7 +6,7 @@ JavaScript framework based on Backbone.js. Extends Backbone router, controller, 
 * controller
 * grouping controllers in modules
 * components (nested views) 
-* debuggermmmp
+* debugger
 * etc.
 
 Work in progress...
@@ -74,17 +74,17 @@ Router constructor have one argument - hash of options. There are following opti
 
 	*Boolean*, default: `false`
 
-	...
+	[todo: add doc for this option]
 
 * `debug`
 
-	...
+	[todo: add doc for this option]
 
 * `config`
 
 	*Object*, default: `{}`
 
-	...
+	[todo: add doc for this option]
 
 * `onModuleError`
 
