@@ -13,7 +13,7 @@ Work in progress...
 
 
 ## Modules
-To automate search of needed controller router in Esencia load module - usualy group of controllers that provide functionality of logicaly related routs. For example, if you have routes `/users`, `/users/:id`, `/users/:id/edit`, etc. to provide work with user accounts in your app, than you need to create module `users` to load all controllers for described urls. Name of module must be the same as first url component after router root.
+To automate search of needed controller router in Esencia loads module - usually group of controllers that provide functionality of logically related routes. For example, if you have routes `/users`, `/users/:id`, `/users/:id/edit`, etc. to provide work with user accounts in your app, than you need to create module `users` to load all controllers for described urls. Name of module must be the same as first url component after router root.
 
 ### Module example
 ```javascript
@@ -38,7 +38,7 @@ define([
 
 ## Router
 ### Router.constructor(options)
-Router constructor have one argument - hash of options. There are following options:
+Router constructor takes one argument - hash of options. There are following options:
 
 * `root`
 
@@ -56,7 +56,7 @@ Router constructor have one argument - hash of options. There are following opti
 
 	*String*, default: `'main'`
 
-	Name for module that will loaded if Esencia cannot extract module name from url. Usualy `defaultModuleName` is a name of module for controller that provide functionality of router root url.
+	Name of module that will be loaded if Esencia cannot extract module name from url. Usually `defaultModuleName` is a name of module for controller that provide functionality of router root url.
 
 * `pushState`
 
@@ -68,7 +68,7 @@ Router constructor have one argument - hash of options. There are following opti
 
 	*Boolean*, default: `true`
 
-	If `true` than Esencia will automaticaly try to load module to get controller for current url.
+	If `true` than Esencia will automatically try to load module to get controller for current url.
 
 * `namedParameters`
 
@@ -117,7 +117,7 @@ require([
 
 ### Router.controller(controller, options)
 
-`Router.controller` method add controller to current router to provide functionality of url that specified in controller. `Router.controller` have two arguments:
+`Router.controller` method add controller to current router to provide functionality of url that specified in controller. `Router.controller` takes two arguments:
 
 * `controller`
 
@@ -177,7 +177,7 @@ require([
 
 	*Boolean*, default: `false`
 
-	If `true` than router will navigate to `nowhereUrl` (`'___'`) before navigate to `fragment`. This trick is using to go to the selected fragment even if it equal to current and to rerender all views that was changed (by default only view of current controller will be rerendered).
+	If `true` than router will navigate to `nowhereUrl` (`'___'`) before navigate to `fragment`. This trick is using to go to the selected fragment even if it equals to current and to rerender all views that was changed (by default only view of current controller will be rerendered).
 
 * `qs`
 
@@ -201,7 +201,7 @@ router.navigate('/users', {
 
 ## Controller
 
-Controller in Esencia is using for preparing data and build chain of views in depends of url. Controller have multiple stage workflow. By default when controller is processed in case of url matching there are next stages:
+Controller in Esencia is using for preparing data and build chain of views in depending on url. Controller has multiple stage workflow. By default when controller is processed in case of url matching there are next stages:
 
 `prepare` -> `view` -> `render`
 
@@ -210,9 +210,9 @@ If controller is already prepared and contorller's view is attached than process
 `renderOnly`
 
 
-### Controller.contructor(options)
+### Controller.constructor(options)
 
-`Controller.contructor` have only one argument - hash of options. There are following options:
+`Controller.constructor` takes only one argument - hash of options. There are following options:
 
 * `url`
 
@@ -254,9 +254,9 @@ If controller is already prepared and contorller's view is attached than process
 
 	*Object*, default: `{}`
 
-	Hash of default url params that will be applied when Router navigating to url of this controller.
+	Hash of default url params that will be applied when Router navigates to url of this controller.
 
-#### Controller.contructor example
+#### Controller.constructor example
 ```javascript
 define([
 	'esencia/controller',
@@ -281,9 +281,9 @@ define([
 
 ### Controller.prepare(callback)
 
-`Controller.prepare` usualy using to fetch collections and models data. `Controller.prepare` implementing `prepare` stage of controller processing. Argument `callback` is a function that must be called after end of all preparing operations.
+`Controller.prepare` usually using to fetch collections and models data. `Controller.prepare` implements `prepare` stage of controller processing. Argument `callback` is a function that must be called after end of all preparing operations.
 
-**Note:** `callback` must be called even if prepare operations are syncronous.
+**Note:** `callback` must be called even if prepare operations are synchronous.
 
 #### Controller.prepare example
 ```javascript
@@ -363,7 +363,7 @@ Esencia `View` instances have following attributes:
 
 	*Object*, default: `{}`
 
-	`View.templateHelpers` is hash of helper functions or data that will be used in templates. When template is rendering `View.templateHelpers` extends by `this.data` of rendering view.
+	`View.templateHelpers` is hash of helper functions or data that will be used in templates. Before template is rendered the `View.templateHelpers` extends by `this.data` of rendering view and passed to template.
 
 
 
@@ -375,19 +375,19 @@ There are following options:
 
 	*element*
 
-	If `el` is not present in `options` hash than `this.noel` will be setted to `true`. Usualy you don't need to pass 
+	If `el` is not present in `options` hash than `this.noel` will be set to `true`. Usually you don't need to pass 
 
 * `data`
 	
 	*Object*, default: `{}`
 
-	Data that will be setted to `this.data` and than passed to template render function.
+	Data that will be set to `this.data` and then will be passed to template render function.
 
 * `models`, `collections`
 
 	*Object*
 
-	Value of this options will be setted to `this.models` and `this.collections` of created view respectively.
+	Values of this options will be set to `this.models` and `this.collections` of created view respectively.
 
 #### View.constructor example
 ```javascript
@@ -430,7 +430,7 @@ define('exampleController', [
 
 ### View.initialize()
 
-`View.initialize` is usualy using for set nested views.
+`View.initialize` is usually using for set nested views.
 
 By default `View.initialize` is empty.
 
@@ -448,36 +448,36 @@ There are following options:
 
 ### View.afterRender()
 
-`View.afterRender` is usualy using for set jQuery components and some other actions that must to be executed exactly after render view template.
+`View.afterRender` is usually using for set jQuery components and some other actions that must to be executed exactly after rendering view template.
 
 By default `View.afterRender` is empty.
 
 
 ### View.beforeDetach()
 
-`View.beforeDetach` is usualy using for make some actions before view will be detached from DOM.
+`View.beforeDetach` is usually using for make some actions before view will be detached from DOM.
 
 By default `View.beforeDetach` is empty.
 
 
 ### View.getData()
 
-`View.getData` is using for set data to template. `View.getData` return hash that will be extended with `templateHelpers` (see `View.templateHelpers`) and than will be used in render function.
+`View.getData` is using for set data to template. `View.getData` returns hash that will be extended with `templateHelpers` (see `View.templateHelpers`) and then will be used in render function.
 
-By default `View.getData` return `this.data`. You can set you value to `this.data` by calling `View.setData(data)` (see `View.setData`).
+By default `View.getData` returns `this.data`. You can set you value to `this.data` by calling `View.setData(data)` (see `View.setData`).
 
 
 ### View.setData(data)
 
 `View.setData` using for two purposes:
 
-* you may specify this method in current view and this method will be called during rerender to set actual data to nested views.
+* you may specify this method of current view and this method will be called during rerendering to set actual data onto nested views;
 
-* also you may call this method on nested view object to set data directly to it
+* also you may call this method of nested view object to set data directly to it.
 
-If you want to set data to nested views you must specify `View.setData` in current view with a function that will getting nested views (see `View.getView') and call their `View.setData` methods with hash of actual data. `View.setData` will be calling every time when current view will rendering (even if it will not be rerendered because `force` is `false` and `isUnchanged` is `true`).
+If you want to set data onto nested views you must specify `View.setData` in current view with a function that will get nested views (see `View.getView') and call their `View.setData` methods with hash of actual data. `View.setData` will be called every time when current view will be rendered (even if it will not be rerendered because `force` is `false` and `isUnchanged` is `true`).
 
-By default if `View.setData` will be called without arguments it will do nothig. And if it will be called with `data` argument it will set `data` to `this.data`.
+By default if `View.setData` will be called without arguments it will do nothing. And if it will be called with `data` argument it will set `data` to `this.data`.
 
 #### View.setData example
 ```javascript
@@ -507,7 +507,7 @@ define('exampleView', [
 
 	View.setData = function() {
 		this.getView('#nestedViewContainer').setData({
-			// data for nested view will be setted every time
+			// data for nested view will be set every time
 			// when current view rendering
 			title: 'Title'
 		});
@@ -531,16 +531,16 @@ define('exampleController', [
 
 ### View.isUnchanged(data)
 
-When view rerendering than all nested views can be rerendered too. `View.isUnchanged` is using for define if you need rerender view. Usualy `View.isUnchanged` return result of comparision of view data and data from function arguments. If they are different than data was changed, `View.isUnchanged` return `false` and view will be rerendered.
+When view rerendering than all nested views can be rerendered too. `View.isUnchanged` is using for defining if you need rerender view. Usually `View.isUnchanged` returns result of comparison of view data and data from function arguments. If they are different than data was changed, `View.isUnchanged` returns `false` and view will be rerendered.
 
-By default `View.isUnchanged` return `true`. It means that view will not be rerendered in case of parent view called its `render` method.
+By default `View.isUnchanged` returns `true`. It means that view will not be rerendered in case of parent view called its `render` method.
 
-**Note:** also you can use `View.render({force: true})` to rerender current and all nested views independent from they `View.isUnchanged` results.
+**Note:** also you can use `View.render({force: true})` to rerender current and all nested views independently from they `View.isUnchanged` results.
 
 
 ### Manage nested views
 
-This methods is using for get, set and remove nested views. Their have all or several of following arguments:
+These methods are using for get, set and remove nested views. Their has all or several of these following arguments:
 
 * `views`
 	
@@ -558,14 +558,14 @@ This methods is using for get, set and remove nested views. Their have all or se
 
 	*Number*
 
-	Index of view to replace. If index is passed it replace only one view with index in views group.
+	Index of view to replace. If index is passed it replace only one view with `index` in views group.
 
 
 #### View.setView(views, selector, index)
 
 *Alias:* View.setViews(views, selector, index)
 
-`View.setView` is using for creating nested views. Nested views will be inserted in existent `selector` views gropup or create new.
+`View.setView` is using for creating nested views. Nested views will be inserted into existent `selector` views group or create new.
 
 
 #### View.appendView(views, selector)
@@ -605,11 +605,11 @@ Usage:
 
 	Will remove all instances from `views` Array that are present in views group of `selector`. 
 
-**Note:** by default `View.removeView` don't remove views from DOM. If you want to remove views form DOM you may:
+**Note:** by default `View.removeView` doesn't remove views from DOM. If you want to remove views form DOM you may:
 
 * use `View.remove()`
 
-* rerender parent view with `{force: true}`. This way is not recomended because it may cause performance problems.
+* rerender parent view with `{force: true}`. This way is not recommended because it may cause performance problems.
 
 
 #### View.remove()
@@ -619,17 +619,17 @@ Usage:
 
 #### View.getView(selector, index)
 
-`View.getView` return first or `index` view from `selector` views group or `null` if there are no views attached to `selector` element.
+`View.getView` returns first or `index` view from `selector` views group or `null` if there are no views attached to `selector` element.
 
 
 #### View.getViews(selector)
 
-`View.getViews` return views group of `selector` or `null` if there are no views attached to `selector` element.
+`View.getViews` returns views group of `selector` or `null` if there are no views attached to `selector` element.
 
 
 #### View.getClosestView()
 
-`View.getClosestView` return view that attached to closest element with class `.view-attached`.
+`View.getClosestView` returns view that attached to the closest element with class `.view-attached`.
 
 
 #### Manage nested views example
@@ -644,7 +644,7 @@ Esencia `Collection` extends Backbone `Collection` - override `Collection.sync` 
 
 ### Collection.exec()
 
-Exec custom non-REST method on collection. It trigger `exec:[method]` event after success collection sync.
+Exec custom non-REST method on collection. It triggers `exec:[method]` event after success collection sync.
 
 #### Collection.exec example
 ```javascript
