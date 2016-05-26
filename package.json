@@ -35,7 +35,8 @@
     "main": "./esencia.js",
     "browser": "./esencia.js",
     "dependencies": {
-        "backbone": "1.0.0"
+        "backbone": "1.0.0",
+        "underscore": "1.5.2"
     },
     "devDependencies": {
         "mocha-phantomjs": "3.5.1"
