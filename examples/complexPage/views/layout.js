@@ -4,7 +4,6 @@ define([
 	'underscore', 'esencia/view'
 ], function(_, ParentView) {
 	var View = {
-		el: '#app',
 		template: _.template(document.getElementById('tmpl-layout').innerHTML),
 		events: {
 			'click a': 'onLinkClick'

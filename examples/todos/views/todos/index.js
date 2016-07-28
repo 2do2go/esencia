@@ -1,10 +1,18 @@
 'use strict';
 
 define([
-	'underscore', 'esencia/view', 'views/todos/item', 'views/todos/footer'
-], function(_, ParentView, TodosItemView, TodosFooterView) {
+	'underscore',
+	'esencia/view',
+	'views/todos/item',
+	'views/todos/footer',
+	'esencia/collection'
+], function(_,
+	ParentView,
+	TodosItemView,
+	TodosFooterView,
+	Collection
+) {
 	var View = {
-		el: '#content',
 		template: _.template(document.getElementById('tmpl-todos').innerHTML),
 		events: {
 			'keydown #new-todo-title': 'onNewTodoTitleKeydown',
@@ -23,6 +31,7 @@ define([
 	}
 
 	View.initialize = function() {
+		this.collections = {todos: new Collection()};
 		this.updateList();
 
 		this.updateFooter();
