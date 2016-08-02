@@ -2,73 +2,44 @@
 
 define([
 	'underscore',
-	'esencia/view',
+	'esencia',
 	'views/todos/item',
-	'views/todos/footer',
-	'esencia/collection'
-], function(_,
-	ParentView,
+	'views/todos/footer'
+], function(
+	_,
+	esencia,
 	TodosItemView,
-	TodosFooterView,
-	Collection
+	TodosFooterView
 ) {
 	var View = {
 		template: _.template(document.getElementById('tmpl-todos').innerHTML),
 		events: {
 			'keydown #new-todo-title': 'onNewTodoTitleKeydown',
-			'change #toggle-all': 'onToggleAllChange'
-		},
-		viewsEvents: {
-			'clearCompleted #todos-footer': 'onClearCompleted',
-			'toggle #todos': 'onTodoToggle'
+			'change #toggle-all': 'onToggleAllChange',
+
+			views: {
+				'clearCompleted #todos-footer': 'onClearCompleted',
+				'toggle #todos': 'onTodoToggle'
+			},
+
+			collections: {
+				'add todos': 'onTodosAdd',
+				'remove todos': 'onTodosRemove'
+			}
 		}
 	};
-
-	function log(str) {
-		if (window.console && window.console.log) {
-			window.console.log('[DEBUG] ' + str);
-		}
-	}
 
 	View.initialize = function() {
-		this.collections = {todos: new Collection()};
+		this.collections = {todos: new esencia.Collection()};
 		this.updateList();
-
 		this.updateFooter();
-
-		var collection = this.collections.todos;
-
-		this.listenTo(collection, 'add', function(model) {
-			log('Add item | title: ' + model.get('title'));
-
-			this.appendTodoView(model);
-
-			this.updateFooter();
-
-			this.render();
-
-			this.updateWrapStyles();
-		});
-
-		this.listenTo(collection, 'remove', function(model, collection, options) {
-			log('Remove item | index: ' + options.index);
-
-			this.updateWrapStyles();
-
-			var view = this.getView('#todos', options.index);
-			this.removeTodoView(view);
-
-			this.updateFooter();
-
-			this.render();
-		});
 	};
 
-	View.getData = function() {
+	View.getTemplateData = function() {
 		return {todosCount: this.collections.todos.length};
 	};
 
-	View.afterRender = function() {
+	View.afterAttach = function() {
 		this.$newTodoTitle = this.$('#new-todo-title');
 		this.$toggleAll = this.$('#toggle-all');
 		this.$todosWrap = this.$('#todos-wrap');
@@ -78,11 +49,6 @@ define([
 		this.appendView(new TodosItemView({
 			models: {todo: model}
 		}), '#todos');
-	};
-
-	View.removeTodoView = function(view) {
-		this.removeView(view, '#todos');
-		view.remove();
 	};
 
 	View.updateWrapStyles = function() {
@@ -95,41 +61,28 @@ define([
 	};
 
 	View.updateList = function() {
-		log(
-			'Update list' +
-			' | removed count: ' + this.getViews('#todos').length +
-			' | append count: ' + this.collections.todos.length
-		);
-
 		var self = this;
-
 		_(this.getViews('#todos')).each(function(view) {
-			self.removeTodoView(view);
+			view.remove();
 		});
-
 		this.collections.todos.each(function(model) {
 			self.appendTodoView(model);
 		});
 	};
 
 	View.updateFooter = function() {
-		log(
-			'Update footer' +
-			' | ' + (this.collections.todos.length ? 'show' : 'hide') +
-			' | items count: ' + this.collections.todos.length
-		);
-
 		if (this.collections.todos.length) {
 			this.setView(new TodosFooterView({
 				collections: this.collections
 			}), '#todos-footer');
 		} else {
-			var view = this.getView('#todos-footer');
-			if (view) {
-				this.removeView(view, '#todos-footer');
-				view.remove();
+			var footerView = this.getView('#todos-footer');
+			if (footerView) {
+				footerView.remove();
 			}
 		}
+
+		return this;
 	};
 
 	View.onNewTodoTitleKeydown = function(event) {
@@ -154,12 +107,9 @@ define([
 		});
 
 		var destroyCallback = _.after(completedTodos.length, function() {
-			log('Clear completed | completed count: ' + completedTodos.length);
-
 			self.updateWrapStyles();
 			self.updateList();
-			self.updateFooter();
-			self.render();
+			self.updateFooter().render();
 		});
 
 		_(completedTodos).each(function(model) {
@@ -170,16 +120,8 @@ define([
 		});
 	};
 
-	View.onTodoToggle = function(view, completed) {
-		log(
-			'Toggle item' +
-			' | index: ' + view.$el.index() +
-			' | completed: ' + completed
-		);
-
-		this.updateFooter();
-		this.render();
-
+	View.onTodoToggle = function() {
+		this.updateFooter().render();
 		var allCompleted = this.collections.todos.every(function(model) {
 			return model.get('completed');
 		});
@@ -187,16 +129,23 @@ define([
 	};
 
 	View.onToggleAllChange = function() {
-		log('Toggle all | completed: ' + this.$toggleAll.prop('checked'));
-
 		var completed = this.$toggleAll.prop('checked');
 		this.collections.todos.each(function(model) {
 			model.set('completed', completed);
 		});
-
-		this.updateFooter();
-		this.render();
+		this.updateFooter().render();
 	};
 
-	return ParentView.extend(View);
+	View.onTodosAdd = function(model) {
+		this.appendTodoView(model);
+		this.updateFooter().render();
+		this.updateWrapStyles();
+	};
+
+	View.onTodosRemove = function() {
+		this.updateWrapStyles();
+		this.updateFooter().render();
+	};
+
+	return esencia.View.extend(View);
 });

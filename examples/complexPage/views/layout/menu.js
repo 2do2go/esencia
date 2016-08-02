@@ -1,16 +1,13 @@
 'use strict';
 
 define([
-	'underscore', 'esencia', 'text!./list.html'
+	'underscore', 'esencia', 'text!./menu.html'
 ], function(_, esencia, template) {
 	var View = {template: _.template(template)};
 
-	View.initialize = function() {
-		setTimeout(this.wait(), 300);
-	};
-
 	View.isUnchanged = function() {
-		return false;
+		var activeHref = this.$('.active').attr('href');
+		return this.data.selected === activeHref;
 	};
 
 	return esencia.View.extend(View);

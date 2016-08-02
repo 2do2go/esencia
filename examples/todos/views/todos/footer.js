@@ -1,8 +1,8 @@
 'use strict';
 
 define([
-	'underscore', 'esencia/view'
-], function(_, ParentView) {
+	'underscore', 'esencia'
+], function(_, esencia) {
 	var View = {
 		template: _.template(document.getElementById('tmpl-todos-footer').innerHTML),
 		events: {
@@ -10,7 +10,7 @@ define([
 		}
 	};
 
-	View.getData = function() {
+	View.getTemplateData = function() {
 		var collection = this.collections.todos;
 
 		var completedTodos = collection.filter(function(model) {
@@ -27,5 +27,5 @@ define([
 		this.trigger('clearCompleted');
 	};
 
-	return ParentView.extend(View);
+	return esencia.View.extend(View);
 });

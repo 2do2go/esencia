@@ -1,8 +1,8 @@
 'use strict';
 
 define([
-	'underscore', 'esencia/view'
-], function(_, ParentView) {
+	'underscore', 'esencia'
+], function(_, esencia) {
 	var View = {
 		template: _.template(document.getElementById('tmpl-todos-item').innerHTML),
 		events: {
@@ -10,29 +10,22 @@ define([
 			'change .js-item-toggle': 'onToggleChange',
 			'blur .js-item-input': 'onInputBlur',
 			'keydown .js-item-input': 'onInputKeydown',
-			'click .js-item-remove': 'onRemoveClick'
+			'click .js-item-remove': 'onRemoveClick',
+
+			models: {
+				'destroy todo': 'onTodoDestroy',
+				'change:title todo': 'onTodoTitleChange',
+				'change:completed todo': 'onTodoCompletedChange'
+			}
 		}
 	};
 
-	View.initialize = function() {
-		var model = this.models.todo;
-
-		this.listenTo(model, 'change:title', function() {
-			this.render({force: true});
-		});
-
-		this.listenTo(model, 'change:completed', function(model, completed) {
-			this.$el[(completed ? 'add' : 'remove') + 'Class']('todos_item__completed');
-			this.$toggle.prop('checked', completed);
-		});
-	};
-
-	View.afterRender = function() {
+	View.afterAttach = function() {
 		this.$input = this.$('.js-item-input');
 		this.$toggle = this.$('.js-item-toggle');
 	};
 
-	View.getData = function() {
+	View.getTemplateData = function() {
 		return {todo: this.models.todo.toJSON()};
 	};
 
@@ -81,5 +74,18 @@ define([
 		this.trigger('toggle', this, completed);
 	};
 
-	return ParentView.extend(View);
+	View.onTodoDestroy = function() {
+		this.remove();
+	};
+
+	View.onTodoTitleChange = function() {
+		this.render({force: true});
+	};
+
+	View.onTodoCompletedChange = function(model, completed) {
+		this.$el[(completed ? 'add' : 'remove') + 'Class']('todos_item__completed');
+		this.$toggle.prop('checked', completed);
+	};
+
+	return esencia.View.extend(View);
 });

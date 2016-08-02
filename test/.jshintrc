@@ -18,6 +18,9 @@
     "globals": {
         "define": false,
         "require": false,
-        "module": false
+        "describe": false,
+        "it": false,
+        "mocha": false,
+        "mochaPhantomJS": false
     }
 }

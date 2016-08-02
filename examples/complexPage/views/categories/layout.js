@@ -1,13 +1,13 @@
 'use strict';
 
 define([
-	'underscore', 'esencia/view'
-], function(_, ParentView) {
-	var View = {
-		template: _.template(
-			document.getElementById('tmpl-categories-layout').innerHTML
-		)
+	'underscore', 'esencia', 'text!./layout.html'
+], function(_, esencia, template) {
+	var View = {template: _.template(template)};
+
+	View.initialize = function() {
+		setTimeout(this.wait(), 300);
 	};
 
-	return ParentView.extend(View);
+	return esencia.View.extend(View);
 });

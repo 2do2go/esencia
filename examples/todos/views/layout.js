@@ -1,11 +1,11 @@
 'use strict';
 
 define([
-	'underscore', 'esencia/view'
-], function(_, ParentView) {
+	'underscore', 'esencia'
+], function(_, esencia) {
 	var View = {
 		template: _.template(document.getElementById('tmpl-layout').innerHTML)
 	};
 
-	return ParentView.extend(View);
+	return esencia.View.extend(View);
 });

@@ -1,23 +1,23 @@
 'use strict';
 
 require([
-	'esencia/router', 'views/layout', 'views/todos/index'
+	'esencia', 'views/layout', 'views/todos/index'
 ], function(
-	Router, LayoutView, TodosView
+	esencia, LayoutView, TodosView
 ) {
-	var router = new Router({
+	var router = new esencia.Router({
 		autoloadModules: false
 	});
 
-	router.controller({
+	router.component({
 		name: 'layout',
 		container: '#app',
 		View: LayoutView
 	});
 
-	router.controller({
+	router.component({
 		url: '',
-		parentName: 'layout',
+		parent: 'layout',
 		container: '#content',
 		View: TodosView
 	});

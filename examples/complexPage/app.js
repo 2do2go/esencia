@@ -1,54 +1,54 @@
  'use strict';
 
 require([
-	'esencia/view',
-	'esencia/router',
-	'views/layout',
+	'esencia',
+	'views/layout/index',
 	'views/categories/layout',
 	'views/categories/list',
 	'views/users/layout',
 	'views/users/list'
 ], function(
-	BaseView,
-	Router,
+	esencia,
 	LayoutView,
 	CategoriesLayoutView,
 	CategoriesListView,
 	UsersLayoutView,
 	UsersListView
 ) {
-	var router = new Router({
+	var router = new esencia.Router({
 		autoloadModules: false
 	});
 
-	BaseView.prototype.router = router;
-
-	router.controller({
+	router.component({
 		name: 'layout',
 		container: '#app',
 		View: LayoutView
 	});
-	router.controller({
+
+	router.component({
 		name: 'categories/layout',
-		parentName: 'layout',
+		parent: 'layout',
 		container: '#content',
 		View: CategoriesLayoutView
 	});
-	router.controller({
-		url: 'categories(/reset)',
-		parentName: 'categories/layout',
+
+	router.component({
+		url: 'categories',
+		parent: 'categories/layout',
 		container: '#list',
 		View: CategoriesListView
 	});
-	router.controller({
+
+	router.component({
 		name: 'users/layout',
-		parentName: 'layout',
+		parent: 'layout',
 		container: '#content',
 		View: UsersLayoutView
 	});
-	router.controller({
-		url: 'users(/reset)',
-		parentName: 'users/layout',
+
+	router.component({
+		url: 'users',
+		parent: 'users/layout',
 		container: '#list',
 		View: UsersListView
 	});
