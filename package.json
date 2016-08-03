@@ -60,8 +60,7 @@
     "jshint": "2.9.2",
     "mocha": "2.5.3",
     "mocha-phantomjs": "3.5.1",
-    "requirejs": "2.2.0",
-    "text": "requirejs/text"
+    "requirejs": "2.2.0"
   },
   "files": [
     "dist/",

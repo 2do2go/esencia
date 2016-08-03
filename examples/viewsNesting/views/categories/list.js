@@ -1,9 +1,9 @@
 'use strict';
 
 define([
-	'underscore', 'esencia', 'text!./list.html'
-], function(_, esencia, template) {
-	var View = {template: _.template(template)};
+	'esencia', 'utils/template'
+], function(esencia, template) {
+	var View = {template: template('categories-list')};
 
 	View.initialize = function() {
 		setTimeout(this.wait(), 300);

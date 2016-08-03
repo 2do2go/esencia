@@ -1,10 +1,10 @@
 'use strict';
 
 define([
-	'underscore', 'esencia', 'text!./index.html', './menu'
-], function(_, esencia, template, MenuView) {
+	'esencia', 'utils/template', './menu'
+], function(esencia, template, MenuView) {
 	var View = {
-		template: _.template(template),
+		template: template('layout'),
 		events: {
 			'click a': 'onLinkClick'
 		}

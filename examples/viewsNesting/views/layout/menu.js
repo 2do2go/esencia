@@ -1,9 +1,9 @@
 'use strict';
 
 define([
-	'underscore', 'esencia', 'text!./menu.html'
-], function(_, esencia, template) {
-	var View = {template: _.template(template)};
+	'esencia', 'utils/template'
+], function(esencia, template) {
+	var View = {template: template('menu')};
 
 	View.isUnchanged = function() {
 		var activeHref = this.$('.active').attr('href');

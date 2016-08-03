@@ -3,16 +3,18 @@
 define([
 	'underscore',
 	'esencia',
+	'utils/template',
 	'views/todos/item',
 	'views/todos/footer'
 ], function(
 	_,
 	esencia,
+	template,
 	TodosItemView,
 	TodosFooterView
 ) {
 	var View = {
-		template: _.template(document.getElementById('tmpl-todos').innerHTML),
+		template: template('todos'),
 		events: {
 			'keydown #new-todo-title': 'onNewTodoTitleKeydown',
 			'change #toggle-all': 'onToggleAllChange',

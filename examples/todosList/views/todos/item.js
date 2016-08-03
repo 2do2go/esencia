@@ -1,12 +1,12 @@
 'use strict';
 
 define([
-	'underscore', 'esencia'
-], function(_, esencia) {
+	'esencia', 'utils/template'
+], function(esencia, template) {
 	var View = {
-		template: _.template(document.getElementById('tmpl-todos-item').innerHTML),
+		template: template('todos-item'),
 		events: {
-			'dblclick .js-item-title': 'onDblclick',
+			'dblclick .js-item-title': 'onDblClick',
 			'change .js-item-toggle': 'onToggleChange',
 			'blur .js-item-input': 'onInputBlur',
 			'keydown .js-item-input': 'onInputKeydown',
@@ -42,7 +42,7 @@ define([
 		this.$el.removeClass('todos_item__editing');
 	};
 
-	View.onDblclick = function() {
+	View.onDblClick = function() {
 		if (!this.$el.is('.todos_item__editing')) {
 			this.startEditing();
 		}

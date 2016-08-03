@@ -1,10 +1,10 @@
 'use strict';
 
 define([
-	'underscore', 'esencia'
-], function(_, esencia) {
+	'esencia', 'utils/template'
+], function(esencia, template) {
 	var View = {
-		template: _.template(document.getElementById('tmpl-todos-footer').innerHTML),
+		template: template('todos-footer'),
 		events: {
 			'click #clear-completed': 'onClearCompletedClick'
 		}

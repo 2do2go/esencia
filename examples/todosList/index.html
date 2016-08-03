@@ -14,7 +14,7 @@
 	<body>
 		<div id="app"></div>
 
-		<script id="tmpl-layout" type="text/html">
+		<script id="tmpl-layout" type="text/template">
 			<div class="container">
 				<div class="row">
 					<div class="col-sm-10 col-sm-push-1 col-md-8 col-md-push-2" id="content"></div>
@@ -22,7 +22,7 @@
 			</div>
 		</script>
 
-		<script id="tmpl-todos" type="text/html">
+		<script id="tmpl-todos" type="text/template">
 			<div>
 				<div class="page-content">
 					<header><h1 class="page-header">Todos</h1></header>
@@ -42,7 +42,7 @@
 			</div>
 		</script>
 
-		<script id="tmpl-todos-item" type="text/html">
+		<script id="tmpl-todos-item" type="text/template">
 			<li class="js-item todos_item<% print(todo.completed ? ' todos_item__completed' : '') %>">
 				<div class="todos_item-inner">
 					<input type="checkbox" class="js-item-toggle todos_item-toggle"<% print(todo.completed ? ' checked' : '') %>>
@@ -53,7 +53,7 @@
 			</li>
 		</script>
 
-		<script id="tmpl-todos-footer" type="text/html">
+		<script id="tmpl-todos-footer" type="text/template">
 			<footer class="todos-footer bg-default clearfix">
 				<div class="todos-count pull-left"><strong><% print(left) %></strong> items left</div>
 				<% if (completed) { %><button id="clear-completed" type="button" class="btn btn-primary btn-xs pull-right">Clear <strong><% print(completed) %></strong> completed item</button><% } %>
