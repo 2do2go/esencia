@@ -5,7 +5,7 @@ JavaScript framework based on Backbone.js. Extends Backbone router, controller, 
 * router features
 * controller
 * grouping controllers in modules
-* components (nested views) 
+* components (nested views)
 * debugger
 * etc.
 
