@@ -1,5 +1,7 @@
 # Esencia
 
+[![Build Status](https://travis-ci.org/2do2go/esencia.svg?branch=v1.0)](https://travis-ci.org/2do2go/esencia)
+
 JavaScript framework based on Backbone.js. Extends Backbone router, view and collection. Add some features, e.g.:
 
 * router features
