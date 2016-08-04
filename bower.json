@@ -1,0 +1,19 @@
+{
+  "name": "esencia",
+  "main": "dist/esencia.js",
+  "dependencies": {
+    "backbone": ">=1.3.3",
+    "underscore": ">=1.8.3"
+  },
+  "ignore": [
+    "docs",
+    "examples",
+    "tests",
+    "*.yml",
+    "*.html",
+    "*.md",
+    ".*",
+    "gulpfile.js",
+    "package.json"
+  ]
+}

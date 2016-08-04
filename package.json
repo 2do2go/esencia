@@ -34,8 +34,8 @@
     "sync": "npm prune && npm install",
     "dev": "gulp dev"
   },
-  "main": "./dist/esencia.js",
-  "browser": "./dist/esencia.js",
+  "main": "dist/esencia.js",
+  "browser": "dist/esencia.js",
   "dependencies": {
     "backbone": ">=1.3.3",
     "underscore": ">=1.8.3"
@@ -63,6 +63,7 @@
   },
   "files": [
     "dist/",
+    "lib/",
     "LICENSE"
   ],
   "directories": {
