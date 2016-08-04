@@ -440,13 +440,17 @@
                     'collections',
                     'models'
                 ];
-            var View = { templateHelpers: {} };
+            var View = {
+                    templateHelpers: {},
+                    waiting: false,
+                    attached: false
+                };
             var viewOptions = [
-                    'models',
-                    'collections',
                     'views',
-                    'events',
+                    'collections',
+                    'models',
                     'data',
+                    'events',
                     'router',
                     'templateHelpers'
                 ];
@@ -454,7 +458,9 @@
                 var self = this;
                 options = options || {};
                 this.views = {};
-                this.data = this.data || {};
+                this.collections = {};
+                this.models = {};
+                this.data = {};
                 _.extend(this, _.pick(options, viewOptions));
                 this.options = options;
                 if (this.template && !_.isFunction(this.template)) {
@@ -462,19 +468,13 @@
                 }
                 this._normalizeViews();
                 this._prepareNestedEvents();
-                this.waiting = false;
-                this.attached = false;
                 backbone.View.apply(this, arguments);
-                if (this.collections) {
-                    _(this.collections).each(function (collection, key) {
-                        self.delegateNestedEvents('collections', key, collection);
-                    });
-                }
-                if (this.models) {
-                    _(this.models).each(function (model, key) {
-                        self.delegateNestedEvents('models', key, model);
-                    });
-                }
+                _(this.collections).each(function (collection, key) {
+                    self.delegateNestedEvents('collections', key, collection);
+                });
+                _(this.models).each(function (model, key) {
+                    self.delegateNestedEvents('models', key, model);
+                });
             };
             View.setData = function (data) {
                 if (data)
@@ -557,12 +557,6 @@
                 return this._updateViews([view], container, index);
             };
             View.setViews = function (views, container, index) {
-                return this._updateViews(views, container, index);
-            };
-            View.replaceView = function (view, container, index) {
-                return this._updateViews([view], container, index);
-            };
-            View.replaceViews = function (views, container, index) {
                 return this._updateViews(views, container, index);
             };
             View.appendView = function (view, container) {
