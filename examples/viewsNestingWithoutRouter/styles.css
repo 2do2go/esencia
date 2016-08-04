@@ -1,0 +1,28 @@
+body {
+	padding: 15px;
+}
+
+.main-layout {
+	border: 3px solid #fce;
+	padding-bottom: 15px;
+}
+
+.categories-layout {
+	border: 3px solid #efa;
+	padding: 0 15px 15px;
+}
+
+.users-layout {
+	border: 3px solid #aef;
+	padding: 0 15px 15px;
+}
+
+.categories-list {
+	border: 3px solid #18bc9c;
+	padding: 0 15px 15px;
+}
+
+.users-list {
+	border: 3px solid #f39c12;
+	padding: 0 15px 15px;
+}

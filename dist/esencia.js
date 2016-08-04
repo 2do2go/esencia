@@ -27,8 +27,8 @@
     _require.modules = [
         function (module, exports) {
             'use strict';
-            var _ = _require(5);
-            var backbone = _require(4);
+            var _ = _require(6);
+            var backbone = _require(5);
             var Collection = {};
             var baseMethods = [
                     'create',
@@ -85,51 +85,230 @@
         },
         function (module, exports) {
             'use strict';
-            var Router = _require(2);
-            var Collection = _require(0);
-            var View = _require(3);
-            module.exports.Router = Router;
-            module.exports.Collection = Collection;
-            module.exports.View = View;
+            var _ = _require(6);
+            var backbone = _require(5);
+            var View = _require(4);
+            var ComponentsManager = function (options) {
+                _.extend(this, _.pick(options, componentManagerOptions));
+                this.options = options;
+                this.components = {};
+                this.componentsTree = null;
+                this.initialize.apply(this, arguments);
+            };
+            var componentManagerOptions = [
+                    'rootComponentEl',
+                    'viewOptions'
+                ];
+            var componentOptions = [
+                    'name',
+                    'parent',
+                    'container',
+                    'View',
+                    'models',
+                    'collections',
+                    'viewOptions'
+                ];
+            _.extend(ComponentsManager.prototype, backbone.Events, {
+                rootComponentEl: 'html',
+                initialize: function () {
+                },
+                addRootComponent: function () {
+                    var RootView = View.extend({ el: this.rootComponentEl });
+                    this.add({
+                        name: '',
+                        parent: null,
+                        View: RootView
+                    });
+                },
+                add: function (options) {
+                    options = _({}).defaults(options, {
+                        parent: '',
+                        process: false
+                    });
+                    var component = _(options).pick(componentOptions);
+                    if (_.isUndefined(component.name)) {
+                        component.name = _.uniqueId('auto-named-component');
+                    }
+                    if (!_.isString(component.name)) {
+                        throw new Error('Component `name` option should be a string');
+                    }
+                    if (component.name in this.components) {
+                        throw new Error('Duplicate component with name "' + component.name + '"');
+                    }
+                    if (!component.View) {
+                        throw new Error('Component `View` option is required');
+                    }
+                    if (!_.isString(component.parent) && !_.isNull(component.parent)) {
+                        throw new Error('Component `parent` option should be a string or null');
+                    }
+                    this.components[component.name] = component;
+                    if (options.process) {
+                        this.process(component.name);
+                    }
+                    return component;
+                },
+                get: function (name) {
+                    return this.components[name] || null;
+                },
+                remove: function (name) {
+                    delete this.components[name];
+                },
+                process: function (name, callback) {
+                    callback = callback || _.noop;
+                    var newComponentsTree = this._calculateTree(name);
+                    this._applyTree({
+                        parentNode: null,
+                        oldNode: this.componentsTree,
+                        node: newComponentsTree
+                    }, callback);
+                },
+                _calculateTree: function (name, child) {
+                    var component = this.components[name];
+                    if (!component) {
+                        throw new Error('Unknown component with name "' + name + '"');
+                    }
+                    var node = { name: name };
+                    if (child) {
+                        node.child = child;
+                    }
+                    if (_.isString(component.parent)) {
+                        return this._calculateTree(component.parent, node);
+                    } else {
+                        return node;
+                    }
+                },
+                _isTreeNodeChanged: function (oldNode, node) {
+                    if (!oldNode || oldNode.name !== node.name || !oldNode.view)
+                        return true;
+                    var component = this.components[node.name];
+                    if (oldNode.view instanceof component.View === false)
+                        return true;
+                    if (!oldNode.view.attached)
+                        return true;
+                    return !oldNode.view.isUnchanged();
+                },
+                _applyTree: function (params, callback) {
+                    var self = this;
+                    var parentNode = params.parentNode;
+                    var iterateNode = function (oldNode, node) {
+                        var childNode = node.child;
+                        delete node.child;
+                        if (parentNode) {
+                            parentNode.child = node;
+                        } else {
+                            self.componentsTree = node;
+                        }
+                        if (childNode) {
+                            self._applyTree({
+                                parentNode: node,
+                                oldNode: oldNode && oldNode.child || null,
+                                node: childNode
+                            }, callback);
+                        } else {
+                            callback();
+                        }
+                    };
+                    var node = params.node;
+                    var oldNode = params.oldNode;
+                    var component = this.components[node.name];
+                    var onViewResolve = function (view) {
+                        node.view = view;
+                        view.setData();
+                        if (component.container) {
+                            if (!parentNode) {
+                                throw new Error('Parent component should exist for component with `container` option');
+                            }
+                            parentNode.view.setView(view, component.container).renderViews().attachViews();
+                        } else {
+                            view.render();
+                        }
+                        iterateNode(null, node);
+                    };
+                    var oldView = oldNode && oldNode.view;
+                    if (this._isTreeNodeChanged(oldNode, node)) {
+                        if (oldView) {
+                            if (oldView.container) {
+                                if (!component.container || oldView.container !== component.container) {
+                                    oldView.remove();
+                                }
+                            } else {
+                                oldView.detach();
+                            }
+                        }
+                        var view = new component.View(_(component).chain().pick('models', 'collections').extendOwn(_(component).result('viewOptions'), this.viewOptions).value());
+                        if (view.waiting) {
+                            view.once('resolve', function () {
+                                onViewResolve(view);
+                            });
+                        } else {
+                            onViewResolve(view);
+                        }
+                    } else {
+                        var oldChildView = oldNode.child && oldNode.child.view;
+                        var oldChildViewContainer;
+                        if (oldChildView) {
+                            oldChildViewContainer = oldChildView.container;
+                            if (oldChildViewContainer) {
+                                oldView.removeView(oldChildView, oldChildViewContainer);
+                            }
+                        }
+                        node.view = oldView;
+                        oldView.setData();
+                        oldView.render();
+                        if (oldChildView && oldChildViewContainer) {
+                            oldView.setView(oldChildView, oldChildViewContainer);
+                        }
+                        iterateNode(oldNode, node);
+                    }
+                }
+            });
+            ComponentsManager.extend = View.extend;
+            module.exports = ComponentsManager;
         },
         function (module, exports) {
             'use strict';
-            var _ = _require(5);
-            var backbone = _require(4);
-            var View = _require(3);
+            var Router = _require(3);
+            var Collection = _require(0);
+            var View = _require(4);
+            var ComponentsManager = _require(1);
+            module.exports.Router = Router;
+            module.exports.Collection = Collection;
+            module.exports.View = View;
+            module.exports.ComponentsManager = ComponentsManager;
+        },
+        function (module, exports) {
+            'use strict';
+            var _ = _require(6);
+            var backbone = _require(5);
+            var ComponentsManager = _require(1);
             var Router = {
                     root: '/',
-                    rootViewEl: 'html',
-                    modulesPath: 'modules/',
-                    defaultModuleName: 'main',
                     pushState: false,
                     namedParameters: false,
-                    autoloadModules: true,
-                    debug: false,
+                    nowhereUrl: '___',
                     config: {},
+                    autoloadModules: true,
+                    modulesPath: 'modules/',
+                    defaultModuleName: 'main',
                     onModuleError: function () {
-                    },
-                    nowhereUrl: '___'
+                    }
                 };
             var routerOptions = [
                     'root',
-                    'rootViewEl',
-                    'modulesPath',
-                    'defaultModuleName',
                     'pushState',
                     'namedParameters',
-                    'autoloadModules',
-                    'debug',
+                    'nowhereUrl',
                     'config',
-                    'onModuleError',
-                    'nowhereUrl'
+                    'autoloadModules',
+                    'modulesPath',
+                    'defaultModuleName',
+                    'onModuleError'
                 ];
             Router.constructor = function (options) {
                 options = options || {};
                 _.extend(this, _.pick(options, routerOptions));
                 this.options = options;
-                this.components = {};
-                this.componentsTree = null;
+                this.componentsManager = new ComponentsManager(_.extend({}, options, { viewOptions: { router: this } }));
                 this.urlParams = {};
                 this.modules = {};
                 this.history = backbone.history;
@@ -141,179 +320,29 @@
                     });
                 }
             };
-            Router._initRootComponent = function () {
-                var RootView = View.extend({ el: this.rootViewEl });
-                this.component({
-                    name: '',
-                    parent: null,
-                    View: RootView
-                });
-            };
-            Router._populateUrlParams = function (componentName, params) {
-                var urlParams = this.urlParams;
+            Router._populateUrlParams = function () {
+                var self = this;
                 var key;
-                for (key in urlParams) {
-                    if (_(urlParams).has(key)) {
-                        delete urlParams[key];
+                for (key in this.urlParams) {
+                    if (_(this.urlParams).has(key)) {
+                        delete this.urlParams[key];
                     }
                 }
-                var component = this.components[componentName];
-                return _(urlParams).extend(_(component).result('defaultUrlParams'), params);
-            };
-            var componentOptions = [
-                    'url',
-                    'name',
-                    'parent',
-                    'container',
-                    'View',
-                    'models',
-                    'collections',
-                    'viewOptions',
-                    'defaultUrlParams'
-                ];
-            Router.component = function (options) {
-                var router = this;
-                options = _({}).defaults(options, {
-                    parent: '',
-                    defaultUrlParams: {},
-                    viewOptions: {},
-                    process: false
+                _(arguments).chain().filter(_.isObject).each(function (params) {
+                    params = _.isFunction(params) ? params.call(self) : params;
+                    _.extendOwn(self.urlParams, params);
                 });
-                var component = _(options).pick(componentOptions);
-                if (_.isUndefined(component.name)) {
-                    component.name = _.uniqueId('auto-named-component');
-                }
-                if (!_.isString(component.name)) {
-                    throw new Error('Component `name` option should be a string');
-                }
-                if (component.name in this.components) {
-                    throw new Error('Duplicate component with name "' + component.name + '"');
-                }
-                if (!component.View) {
-                    throw new Error('Component `View` option is required');
-                }
-                if (!_.isString(component.parent) && !_.isNull(component.parent)) {
-                    throw new Error('Component `parent` option should be a string or null');
-                }
-                this.components[component.name] = component;
-                if (!_.isUndefined(component.url)) {
-                    this.route(component.url, component.name, function (params) {
-                        router._populateUrlParams(component.name, params);
-                        router._processComponent(component.name);
+                return this.urlParams;
+            };
+            Router.component = function (options) {
+                var self = this;
+                var component = this.componentsManager.add(options);
+                if (!_.isUndefined(options.url)) {
+                    this.route(options.url, component.name, function (params) {
+                        self._populateUrlParams(options.defaultUrlParams, params);
+                        self.componentsManager.process(component.name);
                     });
                 }
-                if (options.process) {
-                    this._processComponent(component.name);
-                }
-                return this;
-            };
-            Router._calculateComponentsTree = function (componentName, child) {
-                var component = this.components[componentName];
-                if (!component) {
-                    throw new Error('Unknown component with name "' + componentName + '"');
-                }
-                var node = { name: componentName };
-                if (child) {
-                    node.child = child;
-                }
-                if (_.isString(component.parent)) {
-                    return this._calculateComponentsTree(component.parent, node);
-                } else {
-                    return node;
-                }
-            };
-            Router._isComponentTreeNodeChanged = function (oldNode, node) {
-                if (!oldNode || oldNode.name !== node.name || !oldNode.view)
-                    return true;
-                var component = this.components[node.name];
-                if (oldNode.view instanceof component.View === false)
-                    return true;
-                if (!oldNode.view.attached)
-                    return true;
-                return !oldNode.view.isUnchanged();
-            };
-            Router._applyComponentsTree = function (params, callback) {
-                var self = this;
-                var parentNode = params.parentNode;
-                var iterateNode = function (oldNode, node) {
-                    var childNode = node.child;
-                    delete node.child;
-                    if (parentNode) {
-                        parentNode.child = node;
-                    } else {
-                        self.componentsTree = node;
-                    }
-                    if (childNode) {
-                        self._applyComponentsTree({
-                            parentNode: node,
-                            oldNode: oldNode && oldNode.child || null,
-                            node: childNode
-                        }, callback);
-                    } else {
-                        callback();
-                    }
-                };
-                var node = params.node;
-                var oldNode = params.oldNode;
-                var component = this.components[node.name];
-                var onViewResolve = function (view) {
-                    node.view = view;
-                    view.setData();
-                    if (component.container) {
-                        if (!parentNode) {
-                            throw new Error('Parent component should exist for component with `container` option');
-                        }
-                        parentNode.view.setView(view, component.container).renderViews().attachViews();
-                    } else {
-                        view.render();
-                    }
-                    iterateNode(null, node);
-                };
-                var oldView = oldNode && oldNode.view;
-                if (this._isComponentTreeNodeChanged(oldNode, node)) {
-                    if (oldView) {
-                        if (oldView.container) {
-                            if (!component.container || oldView.container !== component.container) {
-                                oldView.remove();
-                            }
-                        } else {
-                            oldView.detach();
-                        }
-                    }
-                    var view = new component.View(_(component).chain().pick('models', 'collections').defaults(_(component).result('viewOptions')).extend({ router: this }).value());
-                    if (view.waiting) {
-                        view.once('resolve', function () {
-                            onViewResolve(view);
-                        });
-                    } else {
-                        onViewResolve(view);
-                    }
-                } else {
-                    var oldChildView = oldNode.child && oldNode.child.view;
-                    var oldChildViewContainer;
-                    if (oldChildView) {
-                        oldChildViewContainer = oldChildView.container;
-                        if (oldChildViewContainer) {
-                            oldView.removeView(oldChildView, oldChildViewContainer);
-                        }
-                    }
-                    node.view = oldView;
-                    oldView.setData();
-                    oldView.render();
-                    if (oldChildView && oldChildViewContainer) {
-                        oldView.setView(oldChildView, oldChildViewContainer);
-                    }
-                    iterateNode(oldNode, node);
-                }
-            };
-            Router._processComponent = function (componentName, callback) {
-                callback = callback || _.noop;
-                var newComponentsTree = this._calculateComponentsTree(componentName);
-                this._applyComponentsTree({
-                    parentNode: null,
-                    oldNode: this.componentsTree,
-                    node: newComponentsTree
-                }, callback);
             };
             Router.route = function (url, name, callback) {
                 var router = this;
@@ -391,7 +420,7 @@
                 }, this.onModuleError);
             };
             Router.start = function () {
-                this._initRootComponent();
+                this.componentsManager.addRootComponent();
                 backbone.history.start({
                     pushState: this.pushState,
                     root: this.root
@@ -401,8 +430,8 @@
         },
         function (module, exports) {
             'use strict';
-            var _ = _require(5);
-            var backbone = _require(4);
+            var _ = _require(6);
+            var backbone = _require(5);
             var $ = backbone.$;
             var splice = Array.prototype.splice;
             var delegateEventSplitter = /^(\S+)\s*(.*)$/;
@@ -463,7 +492,6 @@
                 };
             };
             View.render = function (options) {
-                console.log('>>>      render: %o %o', this, this.$el);
                 if (this.waiting)
                     return this;
                 options = options || {};
@@ -499,7 +527,6 @@
                 return template(data);
             };
             View.renderViews = function (options) {
-                console.log('>>> renderViews: %o %o', this, this.$el);
                 var self = this;
                 _(this.views).each(function (viewsGroup, container) {
                     if (!viewsGroup.length)
@@ -583,7 +610,6 @@
                 return _.clone(this.views[container]) || [];
             };
             View._insertViews = function (views, container, index) {
-                console.log('>>> _insertViews:', views, container, index);
                 var self = this;
                 var viewsGroup = this.getViews(container);
                 _(views).each(function (view) {
@@ -610,7 +636,6 @@
                 return this;
             };
             View._updateViews = function (views, container, index) {
-                console.log('>>> _updateViews:', views, container, index);
                 var viewsGroup = this.getViews(container);
                 if (viewsGroup.length) {
                     var removedViews = [];
@@ -630,7 +655,6 @@
                 return this._insertViews(views, container, index);
             };
             View._removeViews = function (views, container) {
-                console.log('>>> _removeViews:', views, container);
                 var self = this;
                 var viewsGroup = this.getViews(container);
                 if (!viewsGroup.length)
@@ -756,7 +780,6 @@
                 this.$el.data('esencia-view', this).attr('esencia-view', this.cid);
                 this.delegateEvents();
                 this.attached = true;
-                console.log('>>>      attach: %o %o', this, this.$el);
                 this.afterAttach();
                 return this;
             };
@@ -777,7 +800,6 @@
             View.detach = function () {
                 if (!this.attached)
                     return this;
-                console.log('>>>      detach: %o %o', this, this.$el);
                 this.beforeDetach();
                 this.$el.removeData('esencia-view').removeAttr('esencia-view');
                 this.undelegateEvents();
@@ -808,6 +830,6 @@
             module.exports = __external__;
         }
     ];
-    return _require(1);
+    return _require(2);
 }));
 //# sourceMappingURL=esencia.js.map

@@ -9,9 +9,9 @@ var sourcemaps = require('gulp-sourcemaps');
 var pure = require('gulp-pure-cjs');
 var gulpIgnore = require('gulp-ignore');
 var gulpSequence = require('gulp-sequence');
-var changed = require('gulp-changed');
 var path = require('path');
 var del = require('del');
+var plumber = require('gulp-plumber');
 
 var SRC = 'lib/';
 var DEST = 'dist/';
@@ -20,7 +20,7 @@ var capitalize = function(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
-var createBrowserifyStream = function(options) {
+var createBuildStream = function(options) {
 	if (options.base[options.base.length - 1] === '/') {
 		options.base = options.base.slice(0, options.base.length - 1);
 	}
@@ -28,6 +28,7 @@ var createBrowserifyStream = function(options) {
 	return gulp
 		.src(options.src, {base: options.base})
 		// .pipe(changed(options.dest))
+		.pipe(plumber())
 		.pipe(sourcemaps.init())
 		.pipe(pure({
 			exports: options.exports,
@@ -74,7 +75,7 @@ gulp.task('clean', function() {
 });
 
 gulp.task('build:modules', function() {
-	return createBrowserifyStream({
+	return createBuildStream({
 		src: [SRC + '*.js', '!' + SRC + 'esencia.js'],
 		base: SRC,
 		exports: function(filePath) {
@@ -85,7 +86,7 @@ gulp.task('build:modules', function() {
 });
 
 gulp.task('build:bundle', function() {
-	return createBrowserifyStream({
+	return createBuildStream({
 		src: SRC + 'esencia.js',
 		base: SRC,
 		exports: 'Esencia',
@@ -93,7 +94,7 @@ gulp.task('build:bundle', function() {
 	});
 });
 
-gulp.task('build', ['build:modules', 'build:bundle']);
+gulp.task('build', ['build:bundle']);
 
 gulp.task('watch', function() {
 	return gulp.watch(SRC + '*.js', ['build']);
