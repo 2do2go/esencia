@@ -1,58 +1,59 @@
 {
-    "name": "esencia",
-    "version": "0.0.1",
-    "description": "JavaScript framework based on Backbone.js",
-    "url": "https://github.com/2do2go/esencia",
-    "homepage": "https://github.com/2do2go/esencia",
-    "keywords": [
-        "esencia",
-        "framework",
-        "backbone",
-        "mvc",
-        "model",
-        "view",
-        "controller",
-        "router",
-        "server",
-        "client",
-        "browser"
-    ],
-    "author": "Artem Zhukov <artzhuchka@gmail.com>",
-    "contributors": "2do2go dev team",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/2do2go/esencia.git"
-    },
-    "bugs": {
-        "url": "https://github.com/2do2go/esencia/issues"
-    },
-    "scripts": {
-        "test": "mocha-phantomjs ./test/index.html",
-        "lint": "jshint ."
-    },
-    "main": "./esencia.js",
-    "browser": "./esencia.js",
-    "dependencies": {
-        "backbone": "1.0.0"
-    },
-    "devDependencies": {
-        "mocha-phantomjs": "3.5.1"
-    },
-    "files": [
-        "esencia.js",
-        "esenci.min.js",
-        "esenci.min.map",
-        "LICENSE"
-    ],
-    "directories": {
-        "lib": "lib",
-        "doc": "docs",
-        "example": "examples"
-    },
-    "licenses": [
-        {
-            "type": "MIT",
-            "url": "https://github.com/2do2go/esencia/blob/master/LICENSE"
-        }
-    ]
+  "name": "esencia",
+  "version": "0.1.0",
+  "description": "JavaScript framework based on Backbone.js",
+  "url": "https://github.com/2do2go/esencia",
+  "homepage": "https://github.com/2do2go/esencia",
+  "keywords": [
+    "esencia",
+    "framework",
+    "backbone",
+    "mvc",
+    "model",
+    "view",
+    "controller",
+    "router",
+    "server",
+    "client",
+    "browser"
+  ],
+  "author": "Artem Zhukov <artzhuchka@gmail.com>",
+  "contributors": "2do2go dev team",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/2do2go/esencia.git"
+  },
+  "bugs": {
+    "url": "https://github.com/2do2go/esencia/issues"
+  },
+  "scripts": {
+    "test": "mocha-phantomjs ./test/index.html",
+    "lint": "jshint ."
+  },
+  "main": "./esencia.js",
+  "browser": "./esencia.js",
+  "dependencies": {
+    "backbone": "1.0.0",
+    "underscore": ">=1.8.3"
+  },
+  "devDependencies": {
+    "bootstrap": "3.3.7",
+    "bootswatch": "3.3.6",
+    "chai": "3.5.0",
+    "jquery": "3.1.0",
+    "jshint": "2.9.2",
+    "mocha": "2.5.3",
+    "mocha-phantomjs": "3.5.1",
+    "requirejs": "2.2.0"
+  },
+  "files": [
+    "lib/",
+    "LICENSE"
+  ],
+  "directories": {
+    "lib": "lib",
+    "doc": "docs",
+    "example": "examples"
+  },
+  "license": "MIT"
 }

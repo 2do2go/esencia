@@ -1,18 +1,15 @@
 'use strict';
 
-var cdnjsPath = 'http://cdnjs.cloudflare.com/ajax/libs/';
-
 require.config({
 	baseUrl: '.',
 	paths: {
-		jquery: cdnjsPath + 'jquery/1.11.1/jquery.min',
-		backbone: cdnjsPath + 'backbone.js/1.0.0/backbone-min',
-		underscore: cdnjsPath + 'underscore.js/1.5.2/underscore-min',
-		chai: cdnjsPath + 'chai/1.10.0/chai.min',
+		jquery: '../node_modules/jquery/dist/jquery.min',
+		backbone: '../node_modules/backbone/backbone-min',
+		underscore: '../node_modules/underscore/underscore-min',
+		chai: '../node_modules/chai/chai',
 		esencia: '../lib'
 	},
 	shim: {
-		backbone: ['underscore', 'jquery'],
-		underscore: {exports: '_'}
+		backbone: ['underscore', 'jquery']
 	}
 });
