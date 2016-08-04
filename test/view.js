@@ -13,9 +13,6 @@ define([
 				var view = new View();
 
 				expect(view.noel).to.be.equal(true);
-				expect(view.el).to.be.an('object');
-				expect(view.el.tagName).to.be.equal('DIV');
-				expect(view.$el[0]).to.be.equal(view.el);
 
 				_(['data', 'options', 'views', '_viewsEventsHash', 'templateHelpers']).each(
 					function(key) {
@@ -28,7 +25,7 @@ define([
 				var el = sandboxManager.getSelector();
 				var view = new View({el: el});
 
-				expect(view.noel).to.not.be.ok();
+				expect(view.noel).to.equal(undefined);
 				expect(view.el).to.be.equal(sandboxManager.get(el).get(0));
 
 				sandboxManager.remove(el);
