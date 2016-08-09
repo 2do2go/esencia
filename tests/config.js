@@ -7,6 +7,6 @@ require.config({
 		backbone: '../node_modules/backbone/backbone-min',
 		underscore: '../node_modules/underscore/underscore-min',
 		chai: '../node_modules/chai/chai',
-		esencia: '../dist/esencia.min'
+		esencia: '../dist/esencia'
 	}
 });

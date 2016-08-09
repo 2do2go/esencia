@@ -16,7 +16,7 @@ define([
 					collections: {},
 					models: {}
 				});
-				expect(view.waiting).to.be.equal(false);
+				expect(view.waitingCounter).to.be.equal(0);
 				expect(view.attached).to.be.equal(false);
 
 				_(['data', 'options', 'views', 'templateHelpers']).each(
@@ -30,7 +30,7 @@ define([
 				var options = {
 					models: {model: 1},
 					collections: {col: 1},
-					views: {'#view': 1},
+					views: {'#view': new esencia.View()},
 					data: {a: 1},
 					events: {b: 'method'},
 					templateHelpers: {c: 3},
