@@ -236,8 +236,8 @@
                             }
                         }
                         var view = new component.View(_(component).chain().pick('models', 'collections').extendOwn(_(component).result('viewOptions'), this.viewOptions).value());
-                        if (view.waiting) {
-                            view.once('resolve', function () {
+                        if (view.isWaiting()) {
+                            self.listenToOnce(view, 'resolve', function () {
                                 onViewResolve(view);
                             });
                         } else {
@@ -442,7 +442,7 @@
                 ];
             var View = {
                     templateHelpers: {},
-                    waiting: false,
+                    waitingCounter: 0,
                     attached: false
                 };
             var viewOptions = [
@@ -466,9 +466,16 @@
                 if (this.template && !_.isFunction(this.template)) {
                     throw new Error('View `template` option should be a function');
                 }
-                this._normalizeViews();
-                this._prepareNestedEvents();
+                this._prepareEvents();
+                this._prepareViews();
                 backbone.View.apply(this, arguments);
+                _(this.views).each(function (views) {
+                    _(views).each(function (view) {
+                        if (view.isWaiting()) {
+                            self.listenToOnce(view, 'resolve', self.wait());
+                        }
+                    });
+                });
                 _(this.collections).each(function (collection, key) {
                     self.delegateNestedEvents('collections', key, collection);
                 });
@@ -479,20 +486,26 @@
             View.setData = function (data) {
                 if (data)
                     this.data = data;
+                return this;
             };
             View.isUnchanged = function () {
                 return true;
             };
             View.wait = function () {
                 var self = this;
-                this.waiting = true;
-                return function () {
-                    self.waiting = false;
-                    self.trigger('resolve');
-                };
+                this.waitingCounter++;
+                return _.once(function () {
+                    self.waitingCounter--;
+                    if (!self.isWaiting()) {
+                        self.trigger('resolve');
+                    }
+                });
             };
-            View.render = function (options) {
-                if (this.waiting)
+            View.isWaiting = function () {
+                return this.waitingCounter > 0;
+            };
+            View._render = function (options) {
+                if (this.isWaiting())
                     return this;
                 options = options || {};
                 if (this.template) {
@@ -501,10 +514,10 @@
                         var html = this.renderTemplate(this.template, this.getTemplateData());
                         var $el = $(html);
                         if (!$el.length) {
-                            throw new Error('View template produce empty html');
+                            throw new Error('View template produces empty html');
                         }
                         if ($el.length > 1) {
-                            throw new Error('View template produce html with more than one root elements');
+                            throw new Error('View template produces html with more than one root elements');
                         }
                         this.setElement($el);
                     }
@@ -518,6 +531,9 @@
                     this.attach();
                 }
                 return this;
+            };
+            View.render = function (options) {
+                return this._render(options);
             };
             View.getTemplateData = function () {
                 return this.data;
@@ -711,7 +727,7 @@
                 });
                 return this;
             };
-            View._prepareNestedEvents = function (events) {
+            View._prepareEvents = function (events) {
                 var self = this;
                 this._nestedEventsHash = {};
                 _(nestedEventTypes).each(function (type) {
@@ -743,12 +759,13 @@
                     });
                 });
             };
-            View._normalizeViews = function () {
+            View._prepareViews = function () {
                 var self = this;
                 _(this.views).each(function (views, container) {
-                    if (!_.isArray(views)) {
-                        self.views[container] = [views];
-                    }
+                    if (!_.isArray(views))
+                        views = [views];
+                    self.views[container] = views;
+                    self.delegateNestedEvents('views', container, views);
                 });
             };
             View.attachViews = function () {
@@ -775,6 +792,7 @@
                 this.delegateEvents();
                 this.attached = true;
                 this.afterAttach();
+                this.trigger('attach');
                 return this;
             };
             View.detachViews = function () {
@@ -794,6 +812,7 @@
             View.detach = function () {
                 if (!this.attached)
                     return this;
+                this.trigger('detach');
                 this.beforeDetach();
                 this.$el.removeData('esencia-view').removeAttr('esencia-view');
                 this.undelegateEvents();
