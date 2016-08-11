@@ -16,7 +16,8 @@ define([
 					collections: {},
 					models: {}
 				});
-				expect(view.waitingCounter).to.be.equal(0);
+				expect(view.waitsCounter).to.be.equal(0);
+				expect(view.waitAvailable).to.be.equal(false);
 				expect(view.attached).to.be.equal(false);
 
 				_(['data', 'options', 'views', 'templateHelpers']).each(

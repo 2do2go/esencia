@@ -442,7 +442,8 @@
                 ];
             var View = {
                     templateHelpers: {},
-                    waitingCounter: 0,
+                    waitsCounter: 0,
+                    waitAvailable: true,
                     attached: false
                 };
             var viewOptions = [
@@ -476,6 +477,7 @@
                         }
                     });
                 });
+                this.waitAvailable = false;
                 _(this.collections).each(function (collection, key) {
                     self.delegateNestedEvents('collections', key, collection);
                 });
@@ -492,17 +494,22 @@
                 return true;
             };
             View.wait = function () {
+                if (!this.waitAvailable) {
+                    throw new Error('Method .wait() is available only in the constructor');
+                }
                 var self = this;
-                this.waitingCounter++;
+                this.waitsCounter++;
                 return _.once(function () {
-                    self.waitingCounter--;
-                    if (!self.isWaiting()) {
-                        self.trigger('resolve');
-                    }
+                    _.defer(function () {
+                        self.waitsCounter--;
+                        if (!self.isWaiting()) {
+                            self.trigger('resolve');
+                        }
+                    });
                 });
             };
             View.isWaiting = function () {
-                return this.waitingCounter > 0;
+                return this.waitsCounter > 0;
             };
             View._render = function (options) {
                 if (this.isWaiting())
