@@ -27,67 +27,36 @@
     _require.modules = [
         function (module, exports) {
             'use strict';
-            var _ = _require(6);
-            var backbone = _require(5);
+            var _ = _require(8);
+            var backbone = _require(7);
+            var execUtils = _require(5);
             var Collection = {};
-            var baseMethods = [
-                    'create',
-                    'update',
-                    'patch',
-                    'delete',
-                    'read'
-                ];
-            var execMethodType = 'PUT';
-            Collection.sync = function (method, model, options) {
-                if (!_.contains(baseMethods, method)) {
-                    options = options || {};
-                    var params = {
-                            type: execMethodType,
-                            dataType: 'json',
-                            contentType: 'application/json',
-                            processData: false
-                        };
-                    if (!options.url) {
-                        var url = _.result(model, 'url') || urlError();
-                        params.url = url + (url.charAt(url.length - 1) === '/' ? '' : '/') + method;
-                    }
-                    if (options.data && _.isObject(options.data)) {
-                        options.data = JSON.stringify(options.data);
-                    }
-                    var xhr = options.xhr = backbone.ajax(_.extend(params, options));
-                    model.trigger('request', model, xhr, options);
-                    return xhr;
-                } else {
-                    return backbone.Collection.prototype.sync.call(this, method, model, options);
-                }
+            Collection.sync = function (method, collection, options) {
+                options = execUtils.prepareOptions(method, collection, options);
+                method = execUtils.getFakeBaseMethod(options);
+                return backbone.Collection.prototype.sync.call(this, method, collection, options);
             };
             Collection.exec = function (method, options) {
-                options = options ? _.clone(options) : {};
+                options = _.extend({ parse: true }, options);
                 var collection = this;
                 var success = options.success;
                 options.success = function (resp) {
+                    if (options.fetch)
+                        collection[options.reset ? 'reset' : 'set'](resp, options);
                     if (success)
-                        success(collection, resp, options);
+                        success.call(options.context, collection, resp, options);
                     collection.trigger('exec:' + method, collection, resp, options);
                 };
-                var error = options.error;
-                options.error = function (resp) {
-                    if (error)
-                        error(collection, resp, options);
-                    collection.trigger('error', collection, resp, options);
-                };
+                execUtils.wrapError(this, options);
                 return this.sync(method, this, options);
-            };
-            var urlError = function () {
-                throw new Error('A "url" property or function must be specified');
             };
             module.exports = backbone.Collection.extend(Collection);
         },
         function (module, exports) {
             'use strict';
-            var _ = _require(6);
-            var backbone = _require(5);
-            var View = _require(4);
+            var _ = _require(8);
+            var backbone = _require(7);
+            var View = _require(6);
             var ComponentsManager = function (options) {
                 _.extend(this, _.pick(options, componentManagerOptions));
                 this.options = options;
@@ -267,19 +236,51 @@
         },
         function (module, exports) {
             'use strict';
-            var Router = _require(3);
+            var Router = _require(4);
             var Collection = _require(0);
-            var View = _require(4);
+            var Model = _require(3);
+            var View = _require(6);
             var ComponentsManager = _require(1);
             module.exports.Router = Router;
             module.exports.Collection = Collection;
+            module.exports.Model = Model;
             module.exports.View = View;
             module.exports.ComponentsManager = ComponentsManager;
         },
         function (module, exports) {
             'use strict';
-            var _ = _require(6);
-            var backbone = _require(5);
+            var _ = _require(8);
+            var backbone = _require(7);
+            var execUtils = _require(5);
+            var Model = {};
+            Model.sync = function (method, model, options) {
+                options = execUtils.prepareOptions(method, model, options);
+                method = execUtils.getFakeBaseMethod(options);
+                return backbone.Model.prototype.sync.call(this, method, model, options);
+            };
+            Model.exec = function (method, options) {
+                options = _.extend({ parse: true }, options);
+                var model = this;
+                var success = options.success;
+                options.success = function (resp) {
+                    if (options.fetch) {
+                        var serverAttrs = options.parse ? model.parse(resp, options) : resp;
+                        if (!model.set(serverAttrs, options))
+                            return false;
+                    }
+                    if (success)
+                        success.call(options.context, model, resp, options);
+                    model.trigger('exec:' + method, model, resp, options);
+                };
+                execUtils.wrapError(this, options);
+                return this.sync(method, this, options);
+            };
+            module.exports = backbone.Model.extend(Model);
+        },
+        function (module, exports) {
+            'use strict';
+            var _ = _require(8);
+            var backbone = _require(7);
             var ComponentsManager = _require(1);
             var Router = {
                     root: '/',
@@ -430,8 +431,50 @@
         },
         function (module, exports) {
             'use strict';
-            var _ = _require(6);
-            var backbone = _require(5);
+            var _ = _require(8);
+            var DEFAULT_EXEC_TYPE = 'PUT';
+            var urlError = function () {
+                throw new Error('A "url" property or function must be specified');
+            };
+            module.exports.wrapError = function (model, options) {
+                var error = options.error;
+                options.error = function (resp) {
+                    if (error)
+                        error.call(options.context, model, resp, options);
+                    model.trigger('error', model, resp, options);
+                };
+            };
+            module.exports.prepareOptions = function (method, model, options) {
+                options = _({
+                    type: DEFAULT_EXEC_TYPE,
+                    dataType: 'json',
+                    contentType: 'application/json',
+                    processData: false
+                }).extend(options);
+                if (!options.url) {
+                    var url = _.result(model, 'url') || urlError();
+                    options.url = url.replace(/[^\/]$/, '$&/') + method;
+                }
+                if (options.data && _.isObject(options.data) && !options.processData) {
+                    options.data = JSON.stringify(options.data);
+                }
+                return options;
+            };
+            var baseMethodsMap = {
+                    'POST': 'create',
+                    'PUT': 'update',
+                    'PATCH': 'patch',
+                    'DELETE': 'delete',
+                    'GET': 'read'
+                };
+            module.exports.getFakeBaseMethod = function (options) {
+                return baseMethodsMap[options.type.toUpperCase()];
+            };
+        },
+        function (module, exports) {
+            'use strict';
+            var _ = _require(8);
+            var backbone = _require(7);
             var $ = backbone.$;
             var splice = Array.prototype.splice;
             var delegateEventSplitter = /^(\S+)\s*(.*)$/;
