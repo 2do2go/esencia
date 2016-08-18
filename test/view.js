@@ -4,11 +4,12 @@ define([
 	'chai', 'underscore', 'esencia'
 ], function(chai, _, esencia) {
 	var expect = chai.expect;
+	var View = esencia.View;
 
 	describe('View', function() {
 		describe('.constructor()', function() {
 			it('should set default fields', function() {
-				var view = new esencia.View();
+				var view = new View();
 
 				expect(view).to.contain.keys('el', '$el');
 				expect(view._nestedEventsHash).to.be.eql({
@@ -31,14 +32,14 @@ define([
 				var options = {
 					models: {model: 1},
 					collections: {col: 1},
-					views: {'#view': new esencia.View()},
+					views: {'#view': new View()},
 					data: {a: 1},
 					events: {b: 'method'},
 					templateHelpers: {c: 3},
 					router: {d: 4}
 				};
 
-				var view = new esencia.View(options);
+				var view = new View(options);
 
 				_(options).each(function(value, key) {
 					expect(view[key]).to.be.eql(value);
@@ -52,7 +53,7 @@ define([
 					router: {d: 4}
 				};
 
-				var view = new (esencia.View.extend(options))();
+				var view = new (View.extend(options))();
 
 				_(options).each(function(value, key) {
 					expect(view[key]).to.be.eql(value);
@@ -60,9 +61,9 @@ define([
 			});
 
 			it('should normalize nested views object', function() {
-				var view = new esencia.View({
+				var view = new View({
 					views: {
-						'#non-array': new esencia.View(),
+						'#non-array': new View(),
 						'#empty': []
 					}
 				});
@@ -80,7 +81,7 @@ define([
 			});
 
 			it('should fill _nestedEventsHash from events', function() {
-				var view = new (esencia.View.extend({
+				var view = new (View.extend({
 					events: {
 						views: {
 							'change #view1': function() {},
@@ -147,13 +148,13 @@ define([
 
 		describe('.prependView()', function() {
 			it('should prepend view', function() {
-				var view = new esencia.View({
+				var view = new View({
 					views: {
-						'#selector': [new esencia.View(), new esencia.View()]
+						'#selector': [new View(), new View()]
 					}
 				});
 
-				var nestedView = new esencia.View();
+				var nestedView = new View();
 
 				view.prependView(nestedView, '#selector');
 
@@ -165,14 +166,14 @@ define([
 
 		describe('.prependViews()', function() {
 			it('should prepend views array', function() {
-				var view = new esencia.View({
+				var view = new View({
 					views: {
-						'#selector': [new esencia.View(), new esencia.View()]
+						'#selector': [new View(), new View()]
 					}
 				});
 
-				var nestedView1 = new esencia.View();
-				var nestedView2 = new esencia.View();
+				var nestedView1 = new View();
+				var nestedView2 = new View();
 
 				view.prependViews([nestedView1, nestedView2], '#selector');
 
@@ -185,13 +186,13 @@ define([
 
 		describe('.appendView()', function() {
 			it('should append view', function() {
-				var view = new esencia.View({
+				var view = new View({
 					views: {
-						'#selector': [new esencia.View(), new esencia.View()]
+						'#selector': [new View(), new View()]
 					}
 				});
 
-				var nestedView = new esencia.View();
+				var nestedView = new View();
 
 				view.appendView(nestedView, '#selector');
 
@@ -203,14 +204,14 @@ define([
 
 		describe('.appendViews()', function() {
 			it('should append views array', function() {
-				var view = new esencia.View({
+				var view = new View({
 					views: {
-						'#selector': [new esencia.View(), new esencia.View()]
+						'#selector': [new View(), new View()]
 					}
 				});
 
-				var nestedView1 = new esencia.View();
-				var nestedView2 = new esencia.View();
+				var nestedView1 = new View();
+				var nestedView2 = new View();
 
 				view.appendViews([nestedView1, nestedView2], '#selector');
 
@@ -223,13 +224,13 @@ define([
 
 		describe('.insertView()', function() {
 			it('should insert view at the index', function() {
-				var view = new esencia.View({
+				var view = new View({
 					views: {
-						'#selector': [new esencia.View(), new esencia.View()]
+						'#selector': [new View(), new View()]
 					}
 				});
 
-				var nestedView = new esencia.View();
+				var nestedView = new View();
 
 				view.insertView(nestedView, '#selector', 1);
 
@@ -239,13 +240,13 @@ define([
 			});
 
 			it('should insert view at the end (like appendView)', function() {
-				var view = new esencia.View({
+				var view = new View({
 					views: {
-						'#selector': [new esencia.View(), new esencia.View()]
+						'#selector': [new View(), new View()]
 					}
 				});
 
-				var nestedView = new esencia.View();
+				var nestedView = new View();
 
 				view.insertView(nestedView, '#selector');
 
@@ -257,14 +258,14 @@ define([
 
 		describe('.insertViews()', function() {
 			it('should insert views array at the index', function() {
-				var view = new esencia.View({
+				var view = new View({
 					views: {
-						'#selector': [new esencia.View(), new esencia.View()]
+						'#selector': [new View(), new View()]
 					}
 				});
 
-				var nestedView1 = new esencia.View();
-				var nestedView2 = new esencia.View();
+				var nestedView1 = new View();
+				var nestedView2 = new View();
 
 				view.insertViews([nestedView1, nestedView2], '#selector', 1);
 
@@ -275,14 +276,14 @@ define([
 			});
 
 			it('should insert views array at the end (like appendView)', function() {
-				var view = new esencia.View({
+				var view = new View({
 					views: {
-						'#selector': [new esencia.View(), new esencia.View()]
+						'#selector': [new View(), new View()]
 					}
 				});
 
-				var nestedView1 = new esencia.View();
-				var nestedView2 = new esencia.View();
+				var nestedView1 = new View();
+				var nestedView2 = new View();
 
 				view.insertViews([nestedView1, nestedView2], '#selector');
 
@@ -295,13 +296,13 @@ define([
 
 		describe('.setView()', function() {
 			it('should set view', function() {
-				var view = new esencia.View({
+				var view = new View({
 					views: {
-						'#selector': [new esencia.View(), new esencia.View()]
+						'#selector': [new View(), new View()]
 					}
 				});
 
-				var nestedView = new esencia.View();
+				var nestedView = new View();
 				view.setView(nestedView, '#selector');
 
 				expect(view.views['#selector']).to.be.an('array');
@@ -310,13 +311,13 @@ define([
 			});
 
 			it('should set view at the index', function() {
-				var view = new esencia.View({
+				var view = new View({
 					views: {
-						'#selector': [new esencia.View(), new esencia.View()]
+						'#selector': [new View(), new View()]
 					}
 				});
 
-				var nestedView = new esencia.View();
+				var nestedView = new View();
 				view.setView(nestedView, '#selector', 1);
 
 				expect(view.views['#selector']).to.be.an('array');
@@ -327,14 +328,14 @@ define([
 
 		describe('.setViews()', function() {
 			it('should set views array', function() {
-				var view = new esencia.View({
+				var view = new View({
 					views: {
-						'#selector': [new esencia.View(), new esencia.View()]
+						'#selector': [new View(), new View()]
 					}
 				});
 
-				var nestedView1 = new esencia.View();
-				var nestedView2 = new esencia.View();
+				var nestedView1 = new View();
+				var nestedView2 = new View();
 				view.setViews([nestedView1, nestedView2], '#selector');
 
 				expect(view.views['#selector']).to.be.an('array');
@@ -344,14 +345,14 @@ define([
 			});
 
 			it('should set views array at the index', function() {
-				var view = new esencia.View({
+				var view = new View({
 					views: {
-						'#selector': [new esencia.View(), new esencia.View()]
+						'#selector': [new View(), new View()]
 					}
 				});
 
-				var nestedView1 = new esencia.View();
-				var nestedView2 = new esencia.View();
+				var nestedView1 = new View();
+				var nestedView2 = new View();
 				view.setViews([nestedView1, nestedView2], '#selector', 1);
 
 				expect(view.views['#selector']).to.be.an('array');
@@ -363,11 +364,11 @@ define([
 
 		describe('.removeView()', function() {
 			it('should remove view by instance', function() {
-				var nestedView = new esencia.View();
+				var nestedView = new View();
 
-				var view = new esencia.View({
+				var view = new View({
 					views: {
-						'#selector': [new esencia.View(), nestedView, new esencia.View()]
+						'#selector': [new View(), nestedView, new View()]
 					}
 				});
 
@@ -378,9 +379,9 @@ define([
 			});
 
 			it('should remove view by index', function() {
-				var view = new esencia.View({
+				var view = new View({
 					views: {
-						'#selector': [new esencia.View(), new esencia.View(), new esencia.View()]
+						'#selector': [new View(), new View(), new View()]
 					}
 				});
 
@@ -393,13 +394,13 @@ define([
 
 		describe('.removeViews()', function() {
 			it('should remove views array', function() {
-				var nestedView1 = new esencia.View();
-				var nestedView2 = new esencia.View();
+				var nestedView1 = new View();
+				var nestedView2 = new View();
 
-				var view = new esencia.View({
+				var view = new View({
 					views: {
 						'#selector': [
-							new esencia.View(), nestedView1, new esencia.View(), nestedView2
+							new View(), nestedView1, new View(), nestedView2
 						]
 					}
 				});

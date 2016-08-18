@@ -18,9 +18,11 @@
     "globals": {
         "define": false,
         "require": false,
+        "mocha": false,
+        "Mocha": false,
         "describe": false,
         "it": false,
-        "mocha": false,
-        "mochaPhantomJS": false
+        "before": false,
+        "after": false
     }
 }

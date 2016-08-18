@@ -59,7 +59,7 @@ var createBuildStream = function(options) {
 
 gulp.task('test', function() {
 	return gulp
-		.src('tests/index.html')
+		.src('test/index.html')
 		.pipe(mochaPhantomJS());
 });
 

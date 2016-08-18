@@ -8,7 +8,7 @@
   "ignore": [
     "docs",
     "examples",
-    "tests",
+    "test",
     "*.yml",
     "*.html",
     "*.md",
