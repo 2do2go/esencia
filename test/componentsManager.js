@@ -9,7 +9,83 @@ define([
 
 	describe('ComponentsManager', function() {
 		describe('.add', function() {
+			describe('should throw error', function() {
+				it('if component `name` option has wrong type', function() {
+					var componentsManager = new ComponentsManager();
 
+					expect(function() {
+						componentsManager.add({name: 1});
+					}).to.throw('Component `name` option should be a string');
+				});
+
+				it('if component name is not uniq', function() {
+					var componentsManager = new ComponentsManager();
+					componentsManager.add({name: 'A', parent: null, View: View});
+
+					expect(function() {
+						componentsManager.add({name: 'A', parent: null});
+					}).to.throw('Duplicate component with name "A"');
+				});
+
+				it('if component has not a `View` option', function() {
+					var componentsManager = new ComponentsManager();
+
+					expect(function() {
+						componentsManager.add({name: 'A', parent: null});
+					}).to.throw('Component `View` option is required');
+				});
+
+				it('if component `parent` option has wrong type', function() {
+					var componentsManager = new ComponentsManager();
+
+					expect(function() {
+						componentsManager.add({name: 'A', View: View, parent: 1});
+					}).to.throw('Component `parent` option should be a string or null');
+				});
+			});
+
+			describe('should add component', function() {
+				it('with default options', function() {
+					var componentsManager = new ComponentsManager();
+					var component = componentsManager.add({View: View});
+					expect(component).to.be.an('object');
+					expect(component.name).to.include('auto-named-component');
+					expect(component.parent).to.be.equal('');
+					expect(componentsManager.components).to.have.all.property(
+						component.name, component
+					);
+				});
+
+				it('with null parent', function() {
+					var componentsManager = new ComponentsManager();
+					var component = componentsManager.add({parent: null, View: View});
+					expect(component.parent).to.be.null;
+				});
+
+				it('with user options', function() {
+					var componentsManager = new ComponentsManager();
+					var component = componentsManager.add({
+						name: 'B',
+						parent: 'A',
+						container: '#b',
+						View: View,
+						models: {m: 1},
+						collections: {c: 2},
+						viewOptions: {o: 3}
+					});
+					expect(component).to.be.an('object');
+					expect(component.name).to.be.equal('B');
+					expect(component.parent).to.be.equal('A');
+					expect(component.container).to.be.equal('#b');
+					expect(component.View).to.be.equal(View);
+					expect(component.models).to.be.eql({m: 1});
+					expect(component.collections).to.be.eql({c: 2});
+					expect(component.viewOptions).to.be.eql({o: 3});
+					expect(componentsManager.components).to.have.all.property(
+						component.name, component
+					);
+				});
+			});
 		});
 
 		describe('._buildTree', function() {
