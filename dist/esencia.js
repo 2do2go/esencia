@@ -61,7 +61,7 @@
                 _.extend(this, _.pick(options, componentManagerOptions));
                 this.options = options;
                 this.components = {};
-                this.componentsTree = null;
+                this.tree = null;
                 this.initialize.apply(this, arguments);
             };
             var componentManagerOptions = [
@@ -122,113 +122,120 @@
                 remove: function (name) {
                     delete this.components[name];
                 },
-                process: function (name, callback) {
+                process: function (names, callback) {
+                    if (!_.isArray(names))
+                        names = [names];
                     callback = callback || _.noop;
-                    var newComponentsTree = this._calculateTree(name);
+                    var tree = this._calculateTree(names);
+                    var oldTree = this.tree;
+                    this.tree = [];
                     this._applyTree({
-                        parentNode: null,
-                        oldNode: this.componentsTree,
-                        node: newComponentsTree
+                        parent: { children: this.tree },
+                        oldTree: oldTree,
+                        tree: tree
                     }, callback);
                 },
-                _calculateTree: function (name, child) {
-                    var component = this.components[name];
-                    if (!component) {
-                        throw new Error('Unknown component with name "' + name + '"');
+                _calculateTree: function (names) {
+                    var self = this;
+                    var calculateHashedTree = function (names, tree) {
+                        if (!names.length)
+                            return tree;
+                        var parentNames = [];
+                        var nodes = _(names).chain().uniq().map(function (name) {
+                                var component = self.components[name];
+                                if (!component) {
+                                    throw new Error('Unknown component with name "' + name + '"');
+                                }
+                                if (_(tree).has(component.name))
+                                    return null;
+                                var node = {
+                                        component: component,
+                                        children: []
+                                    };
+                                if (_.isString(component.parent)) {
+                                    parentNames.push(component.parent);
+                                }
+                                tree[component.name] = node;
+                                return node;
+                            }).compact().value();
+                        tree = calculateHashedTree(parentNames, tree);
+                        _(nodes).each(function (node) {
+                            if (_.isString(node.component.parent)) {
+                                tree[node.component.parent].children.push(node);
+                            }
+                        });
+                        return tree;
+                    };
+                    var tree = calculateHashedTree(names, {});
+                    if (_.isEmpty(tree)) {
+                        throw new Error('Calculated components tree is empty');
                     }
-                    var node = { name: name };
-                    if (child) {
-                        node.child = child;
+                    tree = _(tree).filter(function (node) {
+                        return _.isNull(node.component.parent);
+                    });
+                    if (!tree.length) {
+                        throw new Error('Calculated components tree should have at least one root node');
                     }
-                    if (_.isString(component.parent)) {
-                        return this._calculateTree(component.parent, node);
-                    } else {
-                        return node;
+                    if (_(tree).some(function (node) {
+                            return node.component.container;
+                        })) {
+                        throw new Error('Root component could not have a container');
                     }
+                    return tree;
                 },
                 _isTreeNodeChanged: function (oldNode, node) {
-                    if (!oldNode || oldNode.name !== node.name || !oldNode.view)
-                        return true;
-                    var component = this.components[node.name];
-                    if (oldNode.view instanceof component.View === false)
-                        return true;
-                    if (!oldNode.view.attached)
-                        return true;
-                    return !oldNode.view.isUnchanged();
+                    return Boolean(!oldNode || oldNode.component.name !== node.component.name || !oldNode.view || oldNode.view instanceof node.component.View === false || oldNode.view.isWaiting() || !oldNode.view.attached || !oldNode.view.isUnchanged());
                 },
                 _applyTree: function (params, callback) {
                     var self = this;
-                    var parentNode = params.parentNode;
-                    var iterateNode = function (oldNode, node) {
-                        var childNode = node.child;
-                        delete node.child;
-                        if (parentNode) {
-                            parentNode.child = node;
-                        } else {
-                            self.componentsTree = node;
-                        }
-                        if (childNode) {
-                            self._applyTree({
-                                parentNode: node,
-                                oldNode: oldNode && oldNode.child || null,
-                                node: childNode
-                            }, callback);
-                        } else {
-                            callback();
-                        }
+                    var parent = params.parent;
+                    var iterate = function (oldNode, node) {
+                        var children = node.children;
+                        node.children = [];
+                        parent.children.push(node);
+                        var oldChildren = oldNode ? oldNode.children : [];
+                        self._applyTree({
+                            parent: node,
+                            oldTree: oldChildren,
+                            tree: children
+                        }, callback);
                     };
-                    var node = params.node;
-                    var oldNode = params.oldNode;
-                    var component = this.components[node.name];
-                    var onViewResolve = function (view) {
-                        node.view = view;
-                        view.setData();
-                        if (component.container) {
-                            if (!parentNode) {
-                                throw new Error('Parent component should exist for component with `container` option');
-                            }
-                            parentNode.view.setView(view, component.container).renderViews().attachViews();
+                    var onViewResolve = function (node) {
+                        node.view.setData();
+                        if (node.component.container) {
+                            parent.view.setView(node.view, node.component.container).renderViews().attachViews();
                         } else {
-                            view.render();
+                            node.view.render();
                         }
-                        iterateNode(null, node);
+                        iterate(null, node);
                     };
-                    var oldView = oldNode && oldNode.view;
-                    if (this._isTreeNodeChanged(oldNode, node)) {
-                        if (oldView) {
-                            if (oldView.container) {
-                                if (!component.container || oldView.container !== component.container) {
-                                    oldView.remove();
+                    _(params.tree).each(function (node, index) {
+                        var oldNode = params.oldTree[index] || null;
+                        if (this._isTreeNodeChanged(oldNode, node)) {
+                            if (oldNode && oldNode.view) {
+                                if (oldNode.component.container) {
+                                    if (oldNode.component.container !== node.component.container) {
+                                        oldNode.view.remove();
+                                    }
+                                } else {
+                                    oldNode.view.detach();
                                 }
+                            }
+                            node.view = new node.component.View(_(node.component).chain().pick('models', 'collections').extendOwn(_(node.component).result('viewOptions'), this.viewOptions).value());
+                            if (node.view.isWaiting()) {
+                                self.listenToOnce(node.view, 'resolve', function () {
+                                    onViewResolve(node);
+                                });
                             } else {
-                                oldView.detach();
+                                onViewResolve(node);
                             }
-                        }
-                        var view = new component.View(_(component).chain().pick('models', 'collections').extendOwn(_(component).result('viewOptions'), this.viewOptions).value());
-                        if (view.isWaiting()) {
-                            self.listenToOnce(view, 'resolve', function () {
-                                onViewResolve(view);
-                            });
                         } else {
-                            onViewResolve(view);
+                            node.view = oldNode.view;
+                            node.view.setData();
+                            node.view.render();
+                            iterate(oldNode, node);
                         }
-                    } else {
-                        var oldChildView = oldNode.child && oldNode.child.view;
-                        var oldChildViewContainer;
-                        if (oldChildView) {
-                            oldChildViewContainer = oldChildView.container;
-                            if (oldChildViewContainer) {
-                                oldView.removeView(oldChildView, oldChildViewContainer);
-                            }
-                        }
-                        node.view = oldView;
-                        oldView.setData();
-                        oldView.render();
-                        if (oldChildView && oldChildViewContainer) {
-                            oldView.setView(oldChildView, oldChildViewContainer);
-                        }
-                        iterateNode(oldNode, node);
-                    }
+                    });
                 }
             });
             ComponentsManager.extend = View.extend;

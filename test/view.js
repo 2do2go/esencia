@@ -18,8 +18,8 @@ define([
 					models: {}
 				});
 				expect(view.waitsCounter).to.be.equal(0);
-				expect(view.waitAvailable).to.be.equal(false);
-				expect(view.attached).to.be.equal(false);
+				expect(view.waitAvailable).to.be.false;
+				expect(view.attached).to.be.false;
 
 				_(['data', 'options', 'views', 'templateHelpers']).each(
 					function(key) {
@@ -76,7 +76,7 @@ define([
 				_(viewsData).each(function(length, selector) {
 					expect(view.views).to.have.property(selector);
 					expect(view.views[selector]).to.be.an('array');
-					expect(view.views[selector]).to.have.length(length);
+					expect(view.views[selector]).to.have.lengthOf(length);
 				});
 			});
 
@@ -129,7 +129,7 @@ define([
 						expect(view._nestedEventsHash[type]).to.have.property(entityName);
 						expect(view._nestedEventsHash[type][entityName]).to.be.an('array');
 						expect(view._nestedEventsHash[type][entityName]).to.have
-							.length(eventNames.length);
+							.lengthOf(eventNames.length);
 
 						_(eventNames).each(function(eventName, index) {
 							var eventItem = view._nestedEventsHash[type][entityName][index];
@@ -159,7 +159,7 @@ define([
 				view.prependView(nestedView, '#selector');
 
 				expect(view.views['#selector']).to.be.an('array');
-				expect(view.views['#selector']).to.have.length(3);
+				expect(view.views['#selector']).to.have.lengthOf(3);
 				expect(view.views['#selector'][0]).to.be.equal(nestedView);
 			});
 		});
@@ -178,7 +178,7 @@ define([
 				view.prependViews([nestedView1, nestedView2], '#selector');
 
 				expect(view.views['#selector']).to.be.an('array');
-				expect(view.views['#selector']).to.have.length(4);
+				expect(view.views['#selector']).to.have.lengthOf(4);
 				expect(view.views['#selector'][0]).to.be.equal(nestedView1);
 				expect(view.views['#selector'][1]).to.be.equal(nestedView2);
 			});
@@ -197,7 +197,7 @@ define([
 				view.appendView(nestedView, '#selector');
 
 				expect(view.views['#selector']).to.be.an('array');
-				expect(view.views['#selector']).to.have.length(3);
+				expect(view.views['#selector']).to.have.lengthOf(3);
 				expect(view.views['#selector'][2]).to.be.equal(nestedView);
 			});
 		});
@@ -216,7 +216,7 @@ define([
 				view.appendViews([nestedView1, nestedView2], '#selector');
 
 				expect(view.views['#selector']).to.be.an('array');
-				expect(view.views['#selector']).to.have.length(4);
+				expect(view.views['#selector']).to.have.lengthOf(4);
 				expect(view.views['#selector'][2]).to.be.equal(nestedView1);
 				expect(view.views['#selector'][3]).to.be.equal(nestedView2);
 			});
@@ -235,7 +235,7 @@ define([
 				view.insertView(nestedView, '#selector', 1);
 
 				expect(view.views['#selector']).to.be.an('array');
-				expect(view.views['#selector']).to.have.length(3);
+				expect(view.views['#selector']).to.have.lengthOf(3);
 				expect(view.views['#selector'][1]).to.be.equal(nestedView);
 			});
 
@@ -251,7 +251,7 @@ define([
 				view.insertView(nestedView, '#selector');
 
 				expect(view.views['#selector']).to.be.an('array');
-				expect(view.views['#selector']).to.have.length(3);
+				expect(view.views['#selector']).to.have.lengthOf(3);
 				expect(view.views['#selector'][2]).to.be.equal(nestedView);
 			});
 		});
@@ -270,7 +270,7 @@ define([
 				view.insertViews([nestedView1, nestedView2], '#selector', 1);
 
 				expect(view.views['#selector']).to.be.an('array');
-				expect(view.views['#selector']).to.have.length(4);
+				expect(view.views['#selector']).to.have.lengthOf(4);
 				expect(view.views['#selector'][1]).to.be.equal(nestedView1);
 				expect(view.views['#selector'][2]).to.be.equal(nestedView2);
 			});
@@ -288,7 +288,7 @@ define([
 				view.insertViews([nestedView1, nestedView2], '#selector');
 
 				expect(view.views['#selector']).to.be.an('array');
-				expect(view.views['#selector']).to.have.length(4);
+				expect(view.views['#selector']).to.have.lengthOf(4);
 				expect(view.views['#selector'][2]).to.be.equal(nestedView1);
 				expect(view.views['#selector'][3]).to.be.equal(nestedView2);
 			});
@@ -306,7 +306,7 @@ define([
 				view.setView(nestedView, '#selector');
 
 				expect(view.views['#selector']).to.be.an('array');
-				expect(view.views['#selector']).to.have.length(1);
+				expect(view.views['#selector']).to.have.lengthOf(1);
 				expect(view.views['#selector'][0]).to.be.equal(nestedView);
 			});
 
@@ -321,7 +321,7 @@ define([
 				view.setView(nestedView, '#selector', 1);
 
 				expect(view.views['#selector']).to.be.an('array');
-				expect(view.views['#selector']).to.have.length(2);
+				expect(view.views['#selector']).to.have.lengthOf(2);
 				expect(view.views['#selector'][1]).to.be.equal(nestedView);
 			});
 		});
@@ -339,7 +339,7 @@ define([
 				view.setViews([nestedView1, nestedView2], '#selector');
 
 				expect(view.views['#selector']).to.be.an('array');
-				expect(view.views['#selector']).to.have.length(2);
+				expect(view.views['#selector']).to.have.lengthOf(2);
 				expect(view.views['#selector'][0]).to.be.equal(nestedView1);
 				expect(view.views['#selector'][1]).to.be.equal(nestedView2);
 			});
@@ -356,7 +356,7 @@ define([
 				view.setViews([nestedView1, nestedView2], '#selector', 1);
 
 				expect(view.views['#selector']).to.be.an('array');
-				expect(view.views['#selector']).to.have.length(3);
+				expect(view.views['#selector']).to.have.lengthOf(3);
 				expect(view.views['#selector'][1]).to.be.equal(nestedView1);
 				expect(view.views['#selector'][2]).to.be.equal(nestedView2);
 			});
@@ -375,7 +375,7 @@ define([
 				view.removeView(nestedView, '#selector');
 
 				expect(view.views['#selector']).to.be.an('array');
-				expect(view.views['#selector']).to.have.length(2);
+				expect(view.views['#selector']).to.have.lengthOf(2);
 			});
 
 			it('should remove view by index', function() {
@@ -388,7 +388,7 @@ define([
 				view.removeView('#selector', 1);
 
 				expect(view.views['#selector']).to.be.an('array');
-				expect(view.views['#selector']).to.have.length(2);
+				expect(view.views['#selector']).to.have.lengthOf(2);
 			});
 		});
 
@@ -408,7 +408,7 @@ define([
 				view.removeViews([nestedView1, nestedView2], '#selector');
 
 				expect(view.views['#selector']).to.be.an('array');
-				expect(view.views['#selector']).to.have.length(2);
+				expect(view.views['#selector']).to.have.lengthOf(2);
 			});
 		});
 	});

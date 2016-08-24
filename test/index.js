@@ -16,7 +16,7 @@ define(function() {
 	mocha.ui('bdd');
 	mocha.reporter('html');
 
-	require(['view'], function() {
+	require(['view', 'componentsManager'], function() {
 		mocha.run();
 	});
 });

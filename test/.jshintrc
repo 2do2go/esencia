@@ -15,6 +15,7 @@
     "immed": true,
     "eqeqeq": true,
     "forin": true,
+    "expr": true,
     "globals": {
         "define": false,
         "require": false,
