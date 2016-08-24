@@ -57,11 +57,14 @@
             var _ = _require(8);
             var backbone = _require(7);
             var View = _require(6);
+            function isTreeNodeChanged(oldNode, node) {
+                return Boolean(!oldNode || oldNode.component.name !== node.component.name || !oldNode.view || oldNode.view instanceof node.component.View === false || oldNode.view.isWaiting() || !oldNode.view.attached || !oldNode.view.isUnchanged());
+            }
             var ComponentsManager = function (options) {
                 _.extend(this, _.pick(options, componentManagerOptions));
                 this.options = options;
                 this.components = {};
-                this.tree = null;
+                this.tree = [];
                 this.initialize.apply(this, arguments);
             };
             var componentManagerOptions = [
@@ -183,35 +186,36 @@
                     }
                     return tree;
                 },
-                _isTreeNodeChanged: function (oldNode, node) {
-                    return Boolean(!oldNode || oldNode.component.name !== node.component.name || !oldNode.view || oldNode.view instanceof node.component.View === false || oldNode.view.isWaiting() || !oldNode.view.attached || !oldNode.view.isUnchanged());
-                },
                 _applyTree: function (params, callback) {
                     var self = this;
                     var parent = params.parent;
+                    var afterCallback = _.after(params.tree.length, callback);
                     var iterate = function (oldNode, node) {
+                        var container = node.component.container;
                         var children = node.children;
+                        var oldChildren = oldNode ? oldNode.children : [];
+                        node.view.setData();
+                        if (!node.view.attached && container) {
+                            parent.view.setView(node.view, container).renderViews({ include: [container] }).attachViews({ include: [container] });
+                        } else {
+                            var exclude = _.union(_(children).chain().map(function (child) {
+                                    return child.component.container;
+                                }).compact().value(), _(oldChildren).chain().map(function (child) {
+                                    return child.component.container;
+                                }).compact().value());
+                            node.view.render({ exclude: exclude });
+                        }
                         node.children = [];
                         parent.children.push(node);
-                        var oldChildren = oldNode ? oldNode.children : [];
                         self._applyTree({
                             parent: node,
                             oldTree: oldChildren,
                             tree: children
-                        }, callback);
-                    };
-                    var onViewResolve = function (node) {
-                        node.view.setData();
-                        if (node.component.container) {
-                            parent.view.setView(node.view, node.component.container).renderViews().attachViews();
-                        } else {
-                            node.view.render();
-                        }
-                        iterate(null, node);
+                        }, afterCallback);
                     };
                     _(params.tree).each(function (node, index) {
                         var oldNode = params.oldTree[index] || null;
-                        if (this._isTreeNodeChanged(oldNode, node)) {
+                        if (isTreeNodeChanged(oldNode, node)) {
                             if (oldNode && oldNode.view) {
                                 if (oldNode.component.container) {
                                     if (oldNode.component.container !== node.component.container) {
@@ -221,18 +225,16 @@
                                     oldNode.view.detach();
                                 }
                             }
-                            node.view = new node.component.View(_(node.component).chain().pick('models', 'collections').extendOwn(_(node.component).result('viewOptions'), this.viewOptions).value());
+                            node.view = new node.component.View(_(node.component).chain().pick('models', 'collections').extendOwn(_(node.component).result('viewOptions'), self.viewOptions).value());
                             if (node.view.isWaiting()) {
                                 self.listenToOnce(node.view, 'resolve', function () {
-                                    onViewResolve(node);
+                                    iterate(null, node);
                                 });
                             } else {
-                                onViewResolve(node);
+                                iterate(null, node);
                             }
                         } else {
                             node.view = oldNode.view;
-                            node.view.setData();
-                            node.view.render();
                             iterate(oldNode, node);
                         }
                     });
@@ -490,6 +492,9 @@
                     'collections',
                     'models'
                 ];
+            function isContainerSkipped(container, options) {
+                return Boolean(options.exclude && _(options.exclude).contains(container) || options.include && !_(options.include).contains(container));
+            }
             var View = {
                     templateHelpers: {},
                     waitsCounter: 0,
@@ -584,7 +589,7 @@
                 }
                 this.renderViews(options);
                 if (!this.parent || this.$container) {
-                    this.attachViews();
+                    this.attachViews(options);
                     this.attach();
                 }
                 return this;
@@ -602,10 +607,12 @@
             View.renderViews = function (options) {
                 var self = this;
                 _(this.views).each(function (viewsGroup, container) {
+                    if (isContainerSkipped(container, options))
+                        return;
                     if (!viewsGroup.length)
                         return;
                     _(viewsGroup).each(function (view) {
-                        view.render(options);
+                        view.render(_(options).omit('include', 'exclude'));
                     });
                     var $container = container ? self.$(container).first() : self.$el;
                     if (!$container.length) {
@@ -703,21 +710,22 @@
                 return this;
             };
             View._updateViews = function (views, container, index) {
-                var viewsGroup = this.getViews(container);
-                if (viewsGroup.length) {
-                    var removedViews = [];
-                    if (typeof index !== 'undefined') {
-                        removedViews = this.getView(container, index);
-                        removedViews = removedViews ? [removedViews] : [];
-                    } else {
-                        removedViews = viewsGroup;
-                    }
-                    if (removedViews.length) {
-                        this._removeViews(removedViews, container);
-                        _(removedViews).each(function (view) {
-                            view.remove();
-                        });
-                    }
+                var oldViews;
+                if (typeof index === 'undefined') {
+                    oldViews = this.getViews(container);
+                } else {
+                    oldViews = this.getView(container, index);
+                    oldViews = oldViews ? [oldViews] : [];
+                }
+                if (oldViews.length === views.length && _(oldViews).all(function (oldView, index) {
+                        return oldView === views[index];
+                    }))
+                    return this;
+                if (oldViews.length) {
+                    this._removeViews(oldViews, container);
+                    _(oldViews).each(function (view) {
+                        view.remove();
+                    });
                 }
                 return this._insertViews(views, container, index);
             };
@@ -726,7 +734,7 @@
                 var viewsGroup = this.getViews(container);
                 if (!viewsGroup.length)
                     return this;
-                var viewObjs = _.chain(views).uniq().map(function (view) {
+                var viewObjs = _(views).chain().uniq().map(function (view) {
                         return {
                             view: view,
                             index: _.indexOf(viewsGroup, view)
@@ -825,12 +833,15 @@
                     self.delegateNestedEvents('views', container, views);
                 });
             };
-            View.attachViews = function () {
-                _(this.views).each(function (viewsGroup) {
+            View.attachViews = function (options) {
+                options = options || {};
+                _(this.views).each(function (viewsGroup, container) {
+                    if (isContainerSkipped(container, options))
+                        return;
                     if (!viewsGroup.length)
                         return;
                     _(viewsGroup).each(function (view) {
-                        view.attachViews();
+                        view.attachViews(_(options).omit('include', 'exclude'));
                         view.attach();
                     });
                 });

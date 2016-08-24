@@ -11,7 +11,7 @@ define([
 	};
 
 	View.isUnchanged = function() {
-		var activeHref = this.$('.active').attr('href');
+		var activeHref = this.$('.active').data('link');
 		return this.data.selected === activeHref;
 	};
 
