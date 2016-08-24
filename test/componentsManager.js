@@ -7,30 +7,11 @@ define([
 	var ComponentsManager = esencia.ComponentsManager;
 	var View = esencia.View;
 
-	function checkTree(tree, expectedTree, expectedParent) {
-		expectedParent = expectedParent || null;
-
-		expect(tree).to.be.an('array');
-		expect(tree).to.have.lengthOf(expectedTree.length);
-
-		_(tree).each(function(node, index) {
-			var expectedNode = expectedTree[index];
-
-			expect(node).to.have.all.keys('component', 'children');
-			expect(node.component).to.be.an('object');
-			expect(node.component.name).to.be.equal(expectedNode.name);
-			expect(node.component.parent).to.be.equal(expectedParent);
-			expect(node.children).to.be.an('array');
-
-			if (expectedNode.children) {
-				checkTree(node.children, expectedNode.children, expectedNode.name);
-			} else {
-				expect(node.children).to.be.empty;
-			}
-		});
-	}
-
 	describe('ComponentsManager', function() {
+		describe('.add', function() {
+
+		});
+
 		describe('._calculateTree', function() {
 			describe('should throw error', function() {
 				it('if component name is unknown', function() {
@@ -82,9 +63,55 @@ define([
 						componentsManager._calculateTree(['A']);
 					}).to.throw('Root component could not have a container');
 				});
+
+				it('if containers and parents are same', function() {
+					var componentsManager = new ComponentsManager();
+					componentsManager.add({name: 'A', parent: null, View: View});
+					componentsManager.add({
+						name: 'B',
+						parent: 'A',
+						container: '#a',
+						View: View
+					});
+					componentsManager.add({
+						name: 'C',
+						parent: 'A',
+						container: '#a',
+						View: View
+					});
+
+					expect(function() {
+						componentsManager._calculateTree(['B', 'C']);
+					}).to.throw(
+						'Components could not have same container and parent in one tree'
+					);
+				});
 			});
 
 			describe('should create tree', function() {
+				function checkTree(tree, expectedTree, expectedParent) {
+					expectedParent = expectedParent || null;
+
+					expect(tree).to.be.an('array');
+					expect(tree).to.have.lengthOf(expectedTree.length);
+
+					_(tree).each(function(node, index) {
+						var expectedNode = expectedTree[index];
+
+						expect(node).to.have.all.keys('component', 'children');
+						expect(node.component).to.be.an('object');
+						expect(node.component.name).to.be.equal(expectedNode.name);
+						expect(node.component.parent).to.be.equal(expectedParent);
+						expect(node.children).to.be.an('array');
+
+						if (expectedNode.children) {
+							checkTree(node.children, expectedNode.children, expectedNode.name);
+						} else {
+							expect(node.children).to.be.empty;
+						}
+					});
+				}
+
 				/**
 				 *  Components hierarchy:
 				 *        A (root)      F (root)

@@ -164,6 +164,11 @@
                         tree = calculateHashedTree(parentNames, tree);
                         _(nodes).each(function (node) {
                             if (_.isString(node.component.parent)) {
+                                if (node.component.container && _(tree[node.component.parent].children).find(function (child) {
+                                        return child.component.container === node.component.container;
+                                    })) {
+                                    throw new Error('Components could not have same container and parent in one tree');
+                                }
                                 tree[node.component.parent].children.push(node);
                             }
                         });
