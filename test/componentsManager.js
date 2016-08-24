@@ -12,13 +12,13 @@ define([
 
 		});
 
-		describe('._calculateTree', function() {
+		describe('._buildTree', function() {
 			describe('should throw error', function() {
 				it('if component name is unknown', function() {
 					var componentsManager = new ComponentsManager();
 
 					expect(function() {
-						componentsManager._calculateTree(['A']);
+						componentsManager._buildTree(['A']);
 					}).to.throw('Unknown component with name "A"');
 				});
 
@@ -26,8 +26,8 @@ define([
 					var componentsManager = new ComponentsManager();
 
 					expect(function() {
-						componentsManager._calculateTree([]);
-					}).to.throw('Calculated components tree is empty');
+						componentsManager._buildTree([]);
+					}).to.throw('Components tree is empty');
 				});
 
 				it('if result tree has not root components', function() {
@@ -44,10 +44,8 @@ define([
 					componentsManager.add({name: 'B', parent: 'A', View: View});
 
 					expect(function() {
-						componentsManager._calculateTree(['A']);
-					}).to.throw(
-						'Calculated components tree should have at least one root node'
-					);
+						componentsManager._buildTree(['A']);
+					}).to.throw('Components tree should have at least one root node');
 				});
 
 				it('if root component has a container', function() {
@@ -60,11 +58,11 @@ define([
 					});
 
 					expect(function() {
-						componentsManager._calculateTree(['A']);
+						componentsManager._buildTree(['A']);
 					}).to.throw('Root component could not have a container');
 				});
 
-				it('if containers and parents are same', function() {
+				it('if containers and parents are same in one tree', function() {
 					var componentsManager = new ComponentsManager();
 					componentsManager.add({name: 'A', parent: null, View: View});
 					componentsManager.add({
@@ -81,7 +79,7 @@ define([
 					});
 
 					expect(function() {
-						componentsManager._calculateTree(['B', 'C']);
+						componentsManager._buildTree(['B', 'C']);
 					}).to.throw(
 						'Components could not have same container and parent in one tree'
 					);
@@ -131,13 +129,13 @@ define([
 				componentsManager.add({name: 'G', parent: 'F', View: View});
 
 				it('for single root component: A', function() {
-					var tree = componentsManager._calculateTree(['A']);
+					var tree = componentsManager._buildTree(['A']);
 
 					checkTree(tree, [{name: 'A'}]);
 				});
 
 				it('for single component: D', function() {
-					var tree = componentsManager._calculateTree(['D']);
+					var tree = componentsManager._buildTree(['D']);
 
 					checkTree(tree, [{
 						name: 'A',
@@ -151,7 +149,7 @@ define([
 				});
 
 				it('for multiple components from same branch: [C, E]', function() {
-					var tree = componentsManager._calculateTree(['C', 'E']);
+					var tree = componentsManager._buildTree(['C', 'E']);
 
 					checkTree(tree, [{
 						name: 'A',
@@ -163,7 +161,7 @@ define([
 				});
 
 				it('for multiple components from same level: [D, E]', function() {
-					var tree = componentsManager._calculateTree(['D', 'E']);
+					var tree = componentsManager._buildTree(['D', 'E']);
 
 					checkTree(tree, [{
 						name: 'A',
@@ -178,7 +176,7 @@ define([
 				});
 
 				it('for multiple components from different levels: [D, C]', function() {
-					var tree = componentsManager._calculateTree(['D', 'C']);
+					var tree = componentsManager._buildTree(['D', 'C']);
 
 					checkTree(tree, [{
 						name: 'A',
@@ -190,7 +188,7 @@ define([
 				});
 
 				it('for multiple components with different roots: [C, G]', function() {
-					var tree = componentsManager._calculateTree(['C', 'G']);
+					var tree = componentsManager._buildTree(['C', 'G']);
 
 					checkTree(tree, [{
 						name: 'A',

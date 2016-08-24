@@ -129,7 +129,7 @@
                     if (!_.isArray(names))
                         names = [names];
                     callback = callback || _.noop;
-                    var tree = this._calculateTree(names);
+                    var tree = this._buildTree(names);
                     var oldTree = this.tree;
                     this.tree = [];
                     this._applyTree({
@@ -138,9 +138,9 @@
                         tree: tree
                     }, callback);
                 },
-                _calculateTree: function (names) {
+                _buildTree: function (names) {
                     var self = this;
-                    var calculateHashedTree = function (names, tree) {
+                    var buildHashedTree = function (names, tree) {
                         if (!names.length)
                             return tree;
                         var parentNames = [];
@@ -161,7 +161,7 @@
                                 tree[component.name] = node;
                                 return node;
                             }).compact().value();
-                        tree = calculateHashedTree(parentNames, tree);
+                        tree = buildHashedTree(parentNames, tree);
                         _(nodes).each(function (node) {
                             if (_.isString(node.component.parent)) {
                                 if (node.component.container && _(tree[node.component.parent].children).find(function (child) {
@@ -174,15 +174,15 @@
                         });
                         return tree;
                     };
-                    var tree = calculateHashedTree(names, {});
+                    var tree = buildHashedTree(names, {});
                     if (_.isEmpty(tree)) {
-                        throw new Error('Calculated components tree is empty');
+                        throw new Error('Components tree is empty');
                     }
                     tree = _(tree).filter(function (node) {
                         return _.isNull(node.component.parent);
                     });
                     if (!tree.length) {
-                        throw new Error('Calculated components tree should have at least one root node');
+                        throw new Error('Components tree should have at least one root node');
                     }
                     if (_(tree).some(function (node) {
                             return node.component.container;
