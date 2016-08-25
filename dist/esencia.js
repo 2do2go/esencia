@@ -594,8 +594,7 @@
                 }
                 this.renderViews(options);
                 if (!this.parent || this.$container) {
-                    this.attachViews(options);
-                    this.attach();
+                    this.attach(options);
                 }
                 return this;
             };
@@ -846,8 +845,7 @@
                     if (!viewsGroup.length)
                         return;
                     _(viewsGroup).each(function (view) {
-                        view.attachViews(_(options).omit('include', 'exclude'));
-                        view.attach();
+                        view.attach(_(options).omit('include', 'exclude'));
                     });
                 });
                 return this;
@@ -855,7 +853,7 @@
             View.afterAttach = function () {
                 return this;
             };
-            View.attach = function () {
+            View._attach = function () {
                 if (this.attached)
                     return this;
                 var previousView = this.$el.data('esencia-view');
@@ -868,12 +866,15 @@
                 this.trigger('attach');
                 return this;
             };
+            View.attach = function (options) {
+                this.attachViews(options);
+                return this._attach();
+            };
             View.detachViews = function () {
                 _(this.views).each(function (viewsGroup) {
                     if (!viewsGroup.length)
                         return;
                     _(viewsGroup).each(function (view) {
-                        view.detachViews();
                         view.detach();
                     });
                 });
@@ -882,7 +883,7 @@
             View.beforeDetach = function () {
                 return this;
             };
-            View.detach = function () {
+            View._detach = function () {
                 if (!this.attached)
                     return this;
                 this.trigger('detach');
@@ -892,11 +893,14 @@
                 this.attached = false;
                 return this;
             };
+            View.detach = function () {
+                this.detachViews();
+                return this._detach();
+            };
             View.remove = function () {
                 if (this.parent) {
                     this.parent.removeView(this, this.container);
                 }
-                this.detachViews();
                 this.detach();
                 return backbone.View.prototype.remove.call(this);
             };
