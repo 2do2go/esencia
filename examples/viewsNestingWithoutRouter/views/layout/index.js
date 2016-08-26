@@ -1,8 +1,8 @@
 'use strict';
 
 define([
-	'backbone', 'esencia', 'utils/template', './menu'
-], function(backbone, esencia, template, MenuView) {
+	'esencia', 'utils/template', './menu'
+], function(esencia, template, MenuView) {
 	var View = {
 		template: template('layout'),
 		events: {
@@ -20,7 +20,7 @@ define([
 
 	View.onMenuChange = function(value) {
 		this.getView('#menu').setData({selected: value});
-		backbone.trigger('processComponent', value);
+		esencia.trigger('processComponent', value);
 	};
 
 	return esencia.View.extend(View);

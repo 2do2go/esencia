@@ -16,7 +16,7 @@ define([
 
 	View.setData = function() {
 		this.getView('#menu').setData({
-			selected: this.router.history.fragment.match(/[^\?\/]+/)[0]
+			selected: esencia.history.fragment.match(/[^\?\/]+/)[0]
 		});
 	};
 

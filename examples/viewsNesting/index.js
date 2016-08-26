@@ -42,11 +42,12 @@ require([
 		View: CategoriesLayoutView
 	});
 
-	router.component({
-		url: 'categories',
-		parent: 'categories/layout',
-		container: '#list',
-		View: CategoriesListView
+	router.route('categories', {
+		component: {
+			parent: 'categories/layout',
+			container: '#list',
+			View: CategoriesListView
+		}
 	});
 
 	router.component({
@@ -56,16 +57,17 @@ require([
 		View: UsersLayoutView
 	});
 
-	router.component({
-		url: 'users',
-		parent: 'users/layout',
-		container: '#list',
-		View: UsersListView
+	router.route('users', {
+		component: {
+			parent: 'users/layout',
+			container: '#list',
+			View: UsersListView
+		}
 	});
 
 	router.route('', function() {
 		router.navigate('categories', {replace: true});
 	});
 
-	router.start({pushState: false});
+	esencia.history.start({pushState: false});
 });

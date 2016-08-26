@@ -3,18 +3,16 @@
 define([
 	'underscore',
 	'esencia',
-	'utils/template',
-	'views/todos/item',
-	'views/todos/footer'
+	'./item',
+	'./footer'
 ], function(
 	_,
 	esencia,
-	template,
 	TodosItemView,
 	TodosFooterView
 ) {
 	var View = {
-		template: template('todos'),
+		el: '#todos-app',
 		events: {
 			'keydown #new-todo-title': 'onNewTodoTitleKeydown',
 			'change #toggle-all': 'onToggleAllChange',
@@ -35,10 +33,6 @@ define([
 		this.collections = {todos: new esencia.Collection()};
 		this.updateList();
 		this.updateFooter();
-	};
-
-	View.getTemplateData = function() {
-		return {todosCount: this.collections.todos.length};
 	};
 
 	View.afterAttach = function() {

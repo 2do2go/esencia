@@ -12,35 +12,27 @@
 		<link rel="stylesheet" href="./styles.css">
 	</head>
 	<body>
-		<div id="app"></div>
+		<div id="todos-app" class="container">
+			<div class="row">
+				<div class="col-sm-10 col-sm-push-1 col-md-8 col-md-push-2">
+					<div class="page-content">
+						<header><h1 class="page-header">Todos</h1></header>
 
-		<script id="tmpl-layout" type="text/template">
-			<div class="container">
-				<div class="row">
-					<div class="col-sm-10 col-sm-push-1 col-md-8 col-md-push-2" id="content"></div>
+						<section>
+							<input id="new-todo-title" type="text" class="form-control input-lg" placeholder="What needs to be done?">
+
+							<div id="todos-wrap" style="display: none;">
+								<div class="checkbox todos-toggle-all"><label><input id="toggle-all" type="checkbox"> Mark all as complete</label></div>
+								<ul id="todos" class="todos"></ul>
+								<div id="todos-footer"></div>
+							</div>
+						</section>
+					</div>
+
+					<div class="todos-help">Double-click to edit a todo.</div>
 				</div>
 			</div>
-		</script>
-
-		<script id="tmpl-todos" type="text/template">
-			<div>
-				<div class="page-content">
-					<header><h1 class="page-header">Todos</h1></header>
-
-					<section>
-						<input id="new-todo-title" type="text" class="form-control input-lg" placeholder="What needs to be done?">
-
-						<div id="todos-wrap"<% print(todosCount ? '' : ' style="display: none;"') %>>
-							<div class="checkbox todos-toggle-all"><label><input id="toggle-all" type="checkbox"> Mark all as complete</label></div>
-							<ul id="todos" class="todos"></ul>
-							<div id="todos-footer"></div>
-						</div>
-					</section>
-				</div>
-
-				<div class="todos-help">Double-click to edit a todo.</div>
-			</div>
-		</script>
+		</div>
 
 		<script id="tmpl-todos-item" type="text/template">
 			<li class="js-item todos_item<% print(todo.completed ? ' todos_item__completed' : '') %>">

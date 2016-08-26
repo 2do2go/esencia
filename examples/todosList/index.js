@@ -11,26 +11,13 @@ require.config({
 });
 
 require([
-	'esencia', 'views/layout', 'views/todos/index'
+	'esencia', 'views/index'
 ], function(
-	esencia, LayoutView, TodosView
+	esencia, TodosView
 ) {
-	var router = new esencia.Router({
-		autoloadModules: false
+	esencia.componentsManager.add({
+		parent: null,
+		View: TodosView,
+		process: true
 	});
-
-	router.component({
-		name: 'layout',
-		container: '#app',
-		View: LayoutView
-	});
-
-	router.component({
-		url: '',
-		parent: 'layout',
-		container: '#content',
-		View: TodosView
-	});
-
-	router.start();
 });

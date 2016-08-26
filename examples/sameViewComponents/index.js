@@ -29,23 +29,25 @@ require([
 		View: LayoutView
 	});
 
-	router.component({
-		url: 'first',
-		parent: 'layout',
-		container: '#first',
-		View: ContentView
+	router.route('first', {
+		component: {
+			parent: 'layout',
+			container: '#first',
+			View: ContentView
+		}
 	});
 
-	router.component({
-		url: 'second',
-		parent: 'layout',
-		container: '#second',
-		View: ContentView
+	router.route('second', {
+		component: {
+			parent: 'layout',
+			container: '#second',
+			View: ContentView
+		}
 	});
 
 	router.route('', function() {
 		router.navigate('first', {replace: true});
 	});
 
-	router.start({pushState: false});
+	esencia.history.start({pushState: false});
 });
