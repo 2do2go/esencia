@@ -42,24 +42,62 @@ define([
 						componentsManager.add({name: 'A', View: View, parent: 1});
 					}).to.throw('Component `parent` option should be a string or null');
 				});
+
+				it('if root component has a container', function() {
+					var componentsManager = new ComponentsManager();
+					expect(function() {
+						componentsManager.add({
+							name: 'A',
+							parent: null,
+							container: '#a',
+							View: View
+						});
+					}).to.throw('Root component could not have a container');
+				});
+
+				it('if non-root component has not a container', function() {
+					var componentsManager = new ComponentsManager();
+					expect(function() {
+						componentsManager.add({
+							name: 'A',
+							View: View
+						});
+					}).to.throw(
+						'Component `container` option is required for components with parent'
+					);
+				});
+
+				it('if root component has a container', function() {
+					var componentsManager = new ComponentsManager();
+					expect(function() {
+						componentsManager.add({
+							name: 'A',
+							container: 1,
+							View: View
+						});
+					}).to.throw('Component `container` option should be a string');
+				});
 			});
 
 			describe('should add component', function() {
 				it('with default options', function() {
-					var componentsManager = new ComponentsManager();
+					var componentsManager = new ComponentsManager({autoAddRoot: false});
 					var component = componentsManager.add({View: View});
 					expect(component).to.be.an('object');
-					expect(component.name).to.include('auto-named-component');
-					expect(component.parent).to.be.equal('');
+					expect(component.name).to.include('__COMPONENT_');
+					expect(component.parent).to.be.null;
+					expect(componentsManager.defaultParent).to.be.null;
 					expect(componentsManager.components).to.have.all.property(
 						component.name, component
 					);
 				});
 
 				it('with null parent', function() {
-					var componentsManager = new ComponentsManager();
+					var componentsManager = new ComponentsManager({autoAddRoot: false});
 					var component = componentsManager.add({parent: null, View: View});
+					expect(component.name).to.include('__COMPONENT_');
 					expect(component.parent).to.be.null;
+					expect(componentsManager.defaultParent).to.be.equal(component.name);
 				});
 
 				it('with user options', function() {
@@ -95,7 +133,7 @@ define([
 
 					expect(function() {
 						componentsManager._buildTree(['A']);
-					}).to.throw('Unknown component with name "A"');
+					}).to.throw('Component with name "A" does not exist');
 				});
 
 				it('if result tree is empty', function() {
@@ -114,28 +152,29 @@ define([
 					 *     B - C
 					 */
 
-					var componentsManager = new ComponentsManager();
-					componentsManager.add({name: 'A', parent: 'C', View: View});
-					componentsManager.add({name: 'C', parent: 'B', View: View});
-					componentsManager.add({name: 'B', parent: 'A', View: View});
-
-					expect(function() {
-						componentsManager._buildTree(['A']);
-					}).to.throw('Components tree should have at least one root node');
-				});
-
-				it('if root component has a container', function() {
-					var componentsManager = new ComponentsManager();
+					var componentsManager = new ComponentsManager({autoAddRoot: false});
 					componentsManager.add({
 						name: 'A',
-						parent: null,
+						parent: 'C',
 						container: '#a',
+						View: View
+					});
+					componentsManager.add({
+						name: 'C',
+						parent: 'B',
+						container: '#b',
+						View: View
+					});
+					componentsManager.add({
+						name: 'B',
+						parent: 'A',
+						container: '#c',
 						View: View
 					});
 
 					expect(function() {
 						componentsManager._buildTree(['A']);
-					}).to.throw('Root component could not have a container');
+					}).to.throw('Components tree should have at least one root node');
 				});
 
 				it('if containers and parents are same in one tree', function() {
@@ -186,23 +225,60 @@ define([
 					});
 				}
 
-				/**
-				 *  Components hierarchy:
-				 *        A (root)      F (root)
-				 *       / \            \
-				 *      B   C            G
-				 *     /     \
-				 *    D       E
-				 */
+				var componentsManager;
 
-				var componentsManager = new ComponentsManager();
-				componentsManager.add({name: 'A', parent: null, View: View});
-				componentsManager.add({name: 'B', parent: 'A', View: View});
-				componentsManager.add({name: 'C', parent: 'A', View: View});
-				componentsManager.add({name: 'D', parent: 'B', View: View});
-				componentsManager.add({name: 'E', parent: 'C', View: View});
-				componentsManager.add({name: 'F', parent: null, View: View});
-				componentsManager.add({name: 'G', parent: 'F', View: View});
+				before(function() {
+					/**
+					 *  Components hierarchy:
+					 *        A (root)      F (root)
+					 *       / \            \
+					 *      B   C            G
+					 *     /     \
+					 *    D       E
+					 */
+
+					componentsManager = new ComponentsManager();
+					componentsManager.add({
+						name: 'A',
+						parent: null,
+						View: View
+					});
+					componentsManager.add({
+						name: 'B',
+						parent: 'A',
+						container: 'b',
+						View: View
+					});
+					componentsManager.add({
+						name: 'C',
+						parent: 'A',
+						container: 'c',
+						View: View
+					});
+					componentsManager.add({
+						name: 'D',
+						parent: 'B',
+						container: 'd',
+						View: View
+					});
+					componentsManager.add({
+						name: 'E',
+						parent: 'C',
+						container: 'e',
+						View: View
+					});
+					componentsManager.add({
+						name: 'F',
+						parent: null,
+						View: View
+					});
+					componentsManager.add({
+						name: 'G',
+						parent: 'F',
+						container: 'g',
+						View: View
+					});
+				});
 
 				it('for single root component: A', function() {
 					var tree = componentsManager._buildTree(['A']);

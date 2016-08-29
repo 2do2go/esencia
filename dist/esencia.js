@@ -93,7 +93,6 @@
                 _addRoot: function () {
                     var RootView = View.extend({ el: this.rootEl });
                     this.add({
-                        name: '__ROOT_COMPONENT__',
                         parent: null,
                         View: RootView
                     });
@@ -138,7 +137,11 @@
                     return component;
                 },
                 get: function (name) {
-                    return this.components[name] || null;
+                    var component = this.components[name];
+                    if (!component) {
+                        throw new Error('Component with name "' + name + '" does not exist');
+                    }
+                    return component;
                 },
                 remove: function (name) {
                     delete this.components[name];
@@ -163,10 +166,7 @@
                             return tree;
                         var parentNames = [];
                         var nodes = _(names).chain().uniq().map(function (name) {
-                                var component = self.components[name];
-                                if (!component) {
-                                    throw new Error('Unknown component with name "' + name + '"');
-                                }
+                                var component = self.get(name);
                                 if (_.has(tree, component.name))
                                     return null;
                                 var node = {
@@ -248,7 +248,7 @@
                                     oldNode.view.detach();
                                 }
                             }
-                            node.view = new node.component.View(_(node.component).chain().pick('models', 'collections').extend(_.result(node.component, 'viewOptions')).value());
+                            node.view = new node.component.View(_(node.component).chain().pick('models', 'collections').extend(_.result(node.component, 'viewOptions'), { componentsManager: this }).value());
                             if (node.view.isWaiting()) {
                                 self.listenToOnce(node.view, 'resolve', function () {
                                     iterate(null, node);
@@ -303,8 +303,6 @@
             var componentsManager = _require(6);
             var Router = {
                     componentsManager: componentsManager,
-                    namedParameters: false,
-                    nowhereUrl: '___',
                     autoloadModules: true,
                     modulesPath: 'modules/',
                     defaultModuleName: 'main',
@@ -313,8 +311,6 @@
                 };
             var routerOptions = [
                     'componentsManager',
-                    'namedParameters',
-                    'nowhereUrl',
                     'autoloadModules',
                     'modulesPath',
                     'defaultModuleName',
@@ -324,29 +320,8 @@
                 options = options || {};
                 _.extend(this, _.pick(options, routerOptions));
                 this.options = options;
-                this.urlParams = {};
                 this.modules = {};
-                backbone.Router.namedParameters = this.namedParameters;
                 backbone.Router.apply(this, arguments);
-                if (options.autoloadModules) {
-                    this.route('*url', function (params) {
-                        this.setModule(params);
-                    });
-                }
-            };
-            Router._populateUrlParams = function () {
-                var self = this;
-                var key;
-                for (key in this.urlParams) {
-                    if (_.has(this.urlParams, key)) {
-                        delete this.urlParams[key];
-                    }
-                }
-                _(arguments).chain().filter(_.isObject).each(function (params) {
-                    params = _.isFunction(params) ? params.call(self) : params;
-                    _.extendOwn(self.urlParams, params);
-                });
-                return this.urlParams;
             };
             Router.component = function (options) {
                 return this.componentsManager.add(options);
@@ -363,7 +338,11 @@
                 var name = '';
                 if (_.has(options, 'components') || _.has(options, 'component')) {
                     var components = _(options.components || [options.component]).map(function (componentOptions) {
-                            return self.component(componentOptions);
+                            if (_.isString(componentOptions)) {
+                                return self.componentsManager.get(componentOptions);
+                            } else {
+                                return self.component(componentOptions);
+                            }
                         });
                     var componentNames = _.pluck(components, 'name');
                     name = componentNames.join(',');
@@ -372,57 +351,9 @@
                     };
                 }
                 name = options.name || name;
-                backbone.Router.prototype.route.call(this, url, name, function () {
-                    var args = arguments;
-                    self._populateUrlParams(options.defaultUrlParams, args[0]);
-                    self._defaultMiddleware({
-                        url: url,
-                        name: name,
-                        callback: callback
-                    }, function () {
-                        callback.apply(self, args);
-                    });
-                });
+                backbone.Router.prototype.route.call(this, url, name, callback);
             };
-            Router.navigate = function (fragment, options) {
-                options = options || {};
-                if (options.force) {
-                    this.navigate(this.nowhereUrl, {
-                        replace: options.replace,
-                        trigger: false
-                    });
-                    options = _(options).chain().omit('force').extend({ replace: true }).value();
-                    return this.navigate(fragment, options);
-                }
-                options = _.defaults({}, options, {
-                    trigger: true,
-                    params: {}
-                });
-                var qs = options.qs;
-                if (this.toFragment && qs) {
-                    _(qs).each(function (val, key, qs) {
-                        if (val === undefined || val === null)
-                            delete qs[key];
-                    });
-                    fragment = this.toFragment(fragment, qs);
-                    delete options.qs;
-                }
-                backbone.Router.prototype.navigate.call(this, fragment, options);
-            };
-            Router._defaultMiddleware = function (route, next) {
-                next();
-            };
-            Router.middleware = function (middleware) {
-                var self = this;
-                var defaultMiddleware = this._defaultMiddleware;
-                this._defaultMiddleware = function (route, next) {
-                    defaultMiddleware.call(self, route, function () {
-                        middleware.call(self, route, next);
-                    });
-                };
-                return this;
-            };
-            Router.setModule = function (params) {
+            Router.loadModule = function (params) {
                 var self = this;
                 var url = params.url;
                 delete params.url;
@@ -448,7 +379,7 @@
             var $ = backbone.$;
             var splice = Array.prototype.splice;
             var delegateEventSplitter = /^(\S+)\s*(.*)$/;
-            var nestedEventTypes = [
+            var nestedEntityTypes = [
                     'views',
                     'collections',
                     'models'
@@ -468,22 +399,19 @@
                     'models',
                     'data',
                     'events',
-                    'router',
-                    'templateHelpers'
+                    'templateHelpers',
+                    'componentsManager'
                 ];
             View.constructor = function (options) {
                 var self = this;
                 options = options || {};
-                this.views = {};
-                this.collections = {};
-                this.models = {};
                 this.data = {};
                 _.extend(this, _.pick(options, viewOptions));
                 this.options = options;
-                if (this.template && !_.isFunction(this.template)) {
-                    throw new Error('View `template` option should be a function');
-                }
                 this._prepareEvents();
+                _(nestedEntityTypes).each(function (type) {
+                    self[type] = _.result(self, type, {});
+                });
                 this._prepareViews();
                 backbone.View.apply(this, arguments);
                 _(this.views).each(function (views) {
@@ -534,7 +462,11 @@
                 if (this.template) {
                     if (options.force || !this.attached || !this.isUnchanged()) {
                         this.detach();
-                        var html = this.renderTemplate(this.template, this.getTemplateData());
+                        var data = _(this).chain().result('templateHelpers').extend(this.getTemplateData()).value();
+                        var html = this.renderTemplate(this.template, data);
+                        if (!_.isString(html)) {
+                            throw new Error('`renderTemplate` method should return a HTML string');
+                        }
                         var $el = $(html);
                         if (!$el.length) {
                             throw new Error('View template produces empty html');
@@ -562,7 +494,9 @@
                 return this.data;
             };
             View.renderTemplate = function (template, data) {
-                data = _(this).chain().result('templateHelpers').extend(data).value();
+                if (!_.isFunction(template)) {
+                    throw new Error('View `template` should be a function');
+                }
                 return template(data);
             };
             View.renderViews = function (options) {
@@ -727,7 +661,7 @@
                 events = events || _.result(this, 'events');
                 if (!events)
                     return this;
-                events = _.omit(events, nestedEventTypes);
+                events = _.omit(events, nestedEntityTypes);
                 return backbone.View.prototype.delegateEvents.call(this, events);
             };
             View.delegateNestedEvents = function (type, key, entities) {
@@ -756,13 +690,13 @@
             View._prepareEvents = function (events) {
                 var self = this;
                 this._nestedEventsHash = {};
-                _(nestedEventTypes).each(function (type) {
+                _(nestedEntityTypes).each(function (type) {
                     self._nestedEventsHash[type] = {};
                 });
                 events = events || _.result(this, 'events');
                 if (!events)
                     return;
-                _(nestedEventTypes).each(function (type) {
+                _(nestedEntityTypes).each(function (type) {
                     var typeEventsHash = self._nestedEventsHash[type];
                     if (!_.has(events, type) || !_.isObject(events[type]))
                         return;
@@ -904,7 +838,7 @@
             var _ = _require(10);
             var DEFAULT_EXEC_TYPE = 'PUT';
             var urlError = function () {
-                throw new Error('A "url" property or function must be specified');
+                throw new Error('A `url` property or function must be specified');
             };
             exports.wrapError = function (model, options) {
                 var error = options.error;

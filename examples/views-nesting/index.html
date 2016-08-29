@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Esencia Todo Example</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+		<link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
+		<link rel="stylesheet" href="../../node_modules/bootswatch/flatly/bootstrap.min.css">
+		<link rel="stylesheet" href="./styles.css">
+	</head>
+	<body>
+		<div id="app"></div>
+
+		<script id="tmpl-layout" type="text/template">
+			<div class="container main-layout">
+				<h1>Main layout</h1>
+				<p>Rendered at <% print(new Date().toString()) %></p>
+				<div class="row">
+					<div class="col-sm-4" id="menu"></div>
+					<div class="col-sm-8" id="content"></div>
+				</div>
+			</div>
+		</script>
+
+		<script id="tmpl-menu" type="text/template">
+			<div class="list-group">
+				<a class="list-group-item <% print(selected === 'categories' ? 'active' : '') %>" href="categories">Categories</a>
+				<a class="list-group-item <% print(selected === 'users' ? 'active' : '') %>" href="users">Users</a>
+			</div>
+		</script>
+
+		<script id="tmpl-categories-layout" type="text/template">
+			<div class="categories-layout">
+				<h2>Categories layout</h2>
+				<p>Rendered at <% print(new Date().toString()) %> with 300ms delay</p>
+				<div id="list"></div>
+			</div>
+		</script>
+
+		<script id="tmpl-categories-list" type="text/template">
+			<div class="categories-list">
+				<h3>Categories list</h3>
+				<p>Rendered at <% print(new Date().toString()) %> with 300ms delay</p>
+				<ul class="list-group">
+					<% for (var i = 0; i < 5; i++) { %>
+						<li class="list-group-item list-group-item-success">Category <% print(i + 1) %></li>
+					<% } %>
+				</ul>
+				<a id="reset" href="categories" class="btn btn-primary">Reset list</a>
+			</div>
+		</script>
+
+		<script id="tmpl-users-layout" type="text/template">
+			<div class="users-layout">
+				<h2>Users layout</h2>
+				<p>Rendered at <% print(new Date().toString()) %></p>
+				<div id="list"></div>
+			</div>
+		</script>
+
+		<script id="tmpl-users-list" type="text/template">
+			<div class="users-list">
+				<h3>Users list</h3>
+				<p>Rendered at <% print(new Date().toString()) %></p>
+				<ul class="list-group">
+					<% for (var i = 0; i < 5; i++) { %>
+						<li class="list-group-item list-group-item-warning">User <% print(i + 1) %></li>
+					<% } %>
+				</ul>
+			</div>
+		</script>
+
+		<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+		<!--[if lt IE 9]>
+			<script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.2/html5shiv.min.js"></script>
+			<script src="//cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+
+		<script src="../../node_modules/requirejs/require.js"></script>
+		<script src="../config.js"></script>
+		<script>require(['./index']);</script>
+	</body>
+</html>

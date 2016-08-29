@@ -97,7 +97,7 @@ gulp.task('build:bundle', function() {
 gulp.task('build', ['build:bundle']);
 
 gulp.task('watch', function() {
-	return gulp.watch(SRC + '*.js', ['build']);
+	return gulp.watch(SRC + '**/*.js', ['build']);
 });
 
 gulp.task('dev', gulpSequence('clean', 'build', 'watch'));

@@ -36,7 +36,7 @@ define([
 					data: {a: 1},
 					events: {b: 'method'},
 					templateHelpers: {c: 3},
-					router: {d: 4}
+					componentsManager: {d: 4}
 				};
 
 				var view = new View(options);
