@@ -8,101 +8,111 @@ define([
 	var View = esencia.View;
 
 	describe('ComponentsManager', function() {
+		describe('constructor', function() {
+			it('should set default options', function() {
+				var cm = new ComponentsManager();
+				expect(cm.options).to.be.eql({});
+				expect(cm.rootEl).to.be.equal('html');
+				expect(cm.autoAddRoot).to.be.true;
+				expect(cm.defaultParent).to.be.a('string');
+				expect(cm.components).to.be.an('object');
+				expect(cm.tree).to.be.eql([]);
+				var rootComponent = cm.get(cm.defaultParent);
+				expect(rootComponent).to.be.an('object');
+			});
+
+			it('should not add root if `autoAddRoot` option is false', function() {
+				var cm = new ComponentsManager({autoAddRoot: false});
+				expect(cm.options).to.be.eql({autoAddRoot: false});
+				expect(cm.components).to.be.eql({});
+				expect(cm.defaultParent).to.be.undefined;
+			});
+		});
+
 		describe('.add', function() {
 			describe('should throw error', function() {
 				it('if component `name` option has wrong type', function() {
-					var componentsManager = new ComponentsManager();
+					var cm = new ComponentsManager();
 
 					expect(function() {
-						componentsManager.add({name: 1});
+						cm.add({name: 1});
 					}).to.throw('Component `name` option should be a string');
 				});
 
 				it('if component name is not uniq', function() {
-					var componentsManager = new ComponentsManager();
-					componentsManager.add({name: 'A', parent: null, View: View});
+					var cm = new ComponentsManager();
+					cm.add({name: 'A', parent: null, View: View});
 
 					expect(function() {
-						componentsManager.add({name: 'A', parent: null});
+						cm.add({name: 'A', parent: null});
 					}).to.throw('Duplicate component with name "A"');
 				});
 
 				it('if component has not a `View` option', function() {
-					var componentsManager = new ComponentsManager();
+					var cm = new ComponentsManager();
 
 					expect(function() {
-						componentsManager.add({name: 'A', parent: null});
+						cm.add({name: 'A', parent: null});
 					}).to.throw('Component `View` option is required');
 				});
 
+				it('if component `parent` is not set and default parent is undefined',
+					function() {
+						var cm = new ComponentsManager({autoAddRoot: false});
+
+						expect(function() {
+							cm.add({name: 'A', View: View});
+						}).to.throw(
+							'Default root component is not set, add root component first'
+						);
+					}
+				);
+
 				it('if component `parent` option has wrong type', function() {
-					var componentsManager = new ComponentsManager();
+					var cm = new ComponentsManager();
 
 					expect(function() {
-						componentsManager.add({name: 'A', View: View, parent: 1});
+						cm.add({name: 'A', View: View, parent: 1});
 					}).to.throw('Component `parent` option should be a string or null');
 				});
 
 				it('if root component has a container', function() {
-					var componentsManager = new ComponentsManager();
+					var cm = new ComponentsManager();
 					expect(function() {
-						componentsManager.add({
-							name: 'A',
-							parent: null,
-							container: '#a',
-							View: View
-						});
+						cm.add({name: 'A', parent: null, container: '#a', View: View});
 					}).to.throw('Root component could not have a container');
 				});
 
 				it('if non-root component has not a container', function() {
-					var componentsManager = new ComponentsManager();
+					var cm = new ComponentsManager();
 					expect(function() {
-						componentsManager.add({
-							name: 'A',
-							View: View
-						});
+						cm.add({name: 'A', parent: 'B', View: View});
 					}).to.throw(
 						'Component `container` option is required for components with parent'
 					);
 				});
 
-				it('if root component has a container', function() {
-					var componentsManager = new ComponentsManager();
+				it('if container selector is not a string', function() {
+					var cm = new ComponentsManager();
 					expect(function() {
-						componentsManager.add({
-							name: 'A',
-							container: 1,
-							View: View
-						});
-					}).to.throw('Component `container` option should be a string');
+						cm.add({name: 'A', container: 1, View: View});
+					}).to.throw('Component `container` option should be a string selector');
 				});
 			});
 
 			describe('should add component', function() {
-				it('with default options', function() {
-					var componentsManager = new ComponentsManager({autoAddRoot: false});
-					var component = componentsManager.add({View: View});
-					expect(component).to.be.an('object');
+				it('with null parent (root component)', function() {
+					var cm = new ComponentsManager({autoAddRoot: false});
+					var component = cm.add({parent: null, View: View});
 					expect(component.name).to.include('__COMPONENT_');
 					expect(component.parent).to.be.null;
-					expect(componentsManager.defaultParent).to.be.null;
-					expect(componentsManager.components).to.have.all.property(
-						component.name, component
-					);
-				});
-
-				it('with null parent', function() {
-					var componentsManager = new ComponentsManager({autoAddRoot: false});
-					var component = componentsManager.add({parent: null, View: View});
-					expect(component.name).to.include('__COMPONENT_');
-					expect(component.parent).to.be.null;
-					expect(componentsManager.defaultParent).to.be.equal(component.name);
+					expect(cm.defaultParent).to.be.equal(component.name);
+					expect(cm.components).to.have.all.property(component.name, component);
 				});
 
 				it('with user options', function() {
-					var componentsManager = new ComponentsManager();
-					var component = componentsManager.add({
+					var cm = new ComponentsManager();
+					var component = cm.add({
 						name: 'B',
 						parent: 'A',
 						container: '#b',
@@ -119,9 +129,25 @@ define([
 					expect(component.models).to.be.eql({m: 1});
 					expect(component.collections).to.be.eql({c: 2});
 					expect(component.viewOptions).to.be.eql({o: 3});
-					expect(componentsManager.components).to.have.all.property(
-						component.name, component
-					);
+					expect(cm.components).to.have.all.property(component.name, component);
+				});
+
+				it('with default parent name', function() {
+					var cm = new ComponentsManager();
+					var component = cm.add({container: '#a', View: View});
+					expect(component.parent).to.be.equal(cm.defaultParent);
+				});
+
+				it('with string parent name', function() {
+					var cm = new ComponentsManager();
+					var component = cm.add({parent: 'B', container: '#a', View: View});
+					expect(component.parent).to.be.equal('B');
+				});
+
+				it('with `default` option', function() {
+					var cm = new ComponentsManager();
+					var component = cm.add({parent: null, View: View, default: true});
+					expect(component.name).to.be.equal(cm.defaultParent);
 				});
 			});
 		});
@@ -129,18 +155,18 @@ define([
 		describe('._buildTree', function() {
 			describe('should throw error', function() {
 				it('if component name is unknown', function() {
-					var componentsManager = new ComponentsManager();
+					var cm = new ComponentsManager();
 
 					expect(function() {
-						componentsManager._buildTree(['A']);
+						cm._buildTree(['A']);
 					}).to.throw('Component with name "A" does not exist');
 				});
 
 				it('if result tree is empty', function() {
-					var componentsManager = new ComponentsManager();
+					var cm = new ComponentsManager();
 
 					expect(function() {
-						componentsManager._buildTree([]);
+						cm._buildTree([]);
 					}).to.throw('Components tree is empty');
 				});
 
@@ -152,49 +178,24 @@ define([
 					 *     B - C
 					 */
 
-					var componentsManager = new ComponentsManager({autoAddRoot: false});
-					componentsManager.add({
-						name: 'A',
-						parent: 'C',
-						container: '#a',
-						View: View
-					});
-					componentsManager.add({
-						name: 'C',
-						parent: 'B',
-						container: '#b',
-						View: View
-					});
-					componentsManager.add({
-						name: 'B',
-						parent: 'A',
-						container: '#c',
-						View: View
-					});
+					var cm = new ComponentsManager();
+					cm.add({name: 'A', parent: 'C', container: '#a', View: View});
+					cm.add({name: 'C', parent: 'B', container: '#b', View: View});
+					cm.add({name: 'B', parent: 'A', container: '#c', View: View});
 
 					expect(function() {
-						componentsManager._buildTree(['A']);
+						cm._buildTree(['A']);
 					}).to.throw('Components tree should have at least one root node');
 				});
 
 				it('if containers and parents are same in one tree', function() {
-					var componentsManager = new ComponentsManager();
-					componentsManager.add({name: 'A', parent: null, View: View});
-					componentsManager.add({
-						name: 'B',
-						parent: 'A',
-						container: '#a',
-						View: View
-					});
-					componentsManager.add({
-						name: 'C',
-						parent: 'A',
-						container: '#a',
-						View: View
-					});
+					var cm = new ComponentsManager();
+					cm.add({name: 'A', parent: null, View: View});
+					cm.add({name: 'B', parent: 'A', container: '#a', View: View});
+					cm.add({name: 'C', parent: 'A', container: '#a', View: View});
 
 					expect(function() {
-						componentsManager._buildTree(['B', 'C']);
+						cm._buildTree(['B', 'C']);
 					}).to.throw(
 						'Components could not have same container and parent in one tree'
 					);
@@ -225,7 +226,7 @@ define([
 					});
 				}
 
-				var componentsManager;
+				var cm;
 
 				before(function() {
 					/**
@@ -237,57 +238,24 @@ define([
 					 *    D       E
 					 */
 
-					componentsManager = new ComponentsManager();
-					componentsManager.add({
-						name: 'A',
-						parent: null,
-						View: View
-					});
-					componentsManager.add({
-						name: 'B',
-						parent: 'A',
-						container: 'b',
-						View: View
-					});
-					componentsManager.add({
-						name: 'C',
-						parent: 'A',
-						container: 'c',
-						View: View
-					});
-					componentsManager.add({
-						name: 'D',
-						parent: 'B',
-						container: 'd',
-						View: View
-					});
-					componentsManager.add({
-						name: 'E',
-						parent: 'C',
-						container: 'e',
-						View: View
-					});
-					componentsManager.add({
-						name: 'F',
-						parent: null,
-						View: View
-					});
-					componentsManager.add({
-						name: 'G',
-						parent: 'F',
-						container: 'g',
-						View: View
-					});
+					cm = new ComponentsManager();
+					cm.add({name: 'A', parent: null, View: View});
+					cm.add({name: 'B', parent: 'A', container: 'b', View: View});
+					cm.add({name: 'C', parent: 'A', container: 'c', View: View});
+					cm.add({name: 'D', parent: 'B', container: 'd', View: View});
+					cm.add({name: 'E', parent: 'C', container: 'e', View: View});
+					cm.add({name: 'F', parent: null, View: View});
+					cm.add({name: 'G', parent: 'F', container: 'g', View: View});
 				});
 
 				it('for single root component: A', function() {
-					var tree = componentsManager._buildTree(['A']);
+					var tree = cm._buildTree(['A']);
 
 					checkTree(tree, [{name: 'A'}]);
 				});
 
 				it('for single component: D', function() {
-					var tree = componentsManager._buildTree(['D']);
+					var tree = cm._buildTree(['D']);
 
 					checkTree(tree, [{
 						name: 'A',
@@ -301,7 +269,7 @@ define([
 				});
 
 				it('for multiple components from same branch: [C, E]', function() {
-					var tree = componentsManager._buildTree(['C', 'E']);
+					var tree = cm._buildTree(['C', 'E']);
 
 					checkTree(tree, [{
 						name: 'A',
@@ -313,7 +281,7 @@ define([
 				});
 
 				it('for multiple components from same level: [D, E]', function() {
-					var tree = componentsManager._buildTree(['D', 'E']);
+					var tree = cm._buildTree(['D', 'E']);
 
 					checkTree(tree, [{
 						name: 'A',
@@ -328,7 +296,7 @@ define([
 				});
 
 				it('for multiple components from different levels: [D, C]', function() {
-					var tree = componentsManager._buildTree(['D', 'C']);
+					var tree = cm._buildTree(['D', 'C']);
 
 					checkTree(tree, [{
 						name: 'A',
@@ -340,7 +308,7 @@ define([
 				});
 
 				it('for multiple components with different roots: [C, G]', function() {
-					var tree = componentsManager._buildTree(['C', 'G']);
+					var tree = cm._buildTree(['C', 'G']);
 
 					checkTree(tree, [{
 						name: 'A',

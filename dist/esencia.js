@@ -62,6 +62,7 @@
                 return Boolean(!oldNode || oldNode.component.name !== node.component.name || !oldNode.view || oldNode.view instanceof node.component.View === false || oldNode.view.isWaiting() || !oldNode.view.attached || !oldNode.view.isUnchanged());
             }
             var ComponentsManager = function (options) {
+                options = options || {};
                 _.extend(this, _.pick(options, componentManagerOptions));
                 this.options = options;
                 this.components = {};
@@ -72,8 +73,7 @@
             };
             var componentManagerOptions = [
                     'rootEl',
-                    'autoAddRoot',
-                    'defaultParent'
+                    'autoAddRoot'
                 ];
             var componentOptions = [
                     'name',
@@ -87,7 +87,7 @@
             _.extend(ComponentsManager.prototype, backbone.Events, {
                 rootEl: 'html',
                 autoAddRoot: true,
-                defaultParent: null,
+                defaultParent: undefined,
                 initialize: function () {
                 },
                 _addRoot: function () {
@@ -103,32 +103,40 @@
                         process: false
                     });
                     var component = _.pick(options, componentOptions);
-                    if (!_.has(component, 'name')) {
-                        component.name = _.uniqueId('__COMPONENT_') + '__';
-                    }
-                    if (!_.isString(component.name)) {
+                    var hasName = _.has(component, 'name');
+                    var hasContainer = _.has(component, 'container');
+                    var hasParent = _.isString(component.parent);
+                    var isRoot = _.isNull(component.parent);
+                    var hasDefaultParent = _.isString(this.defaultParent);
+                    if (hasName && !_.isString(component.name)) {
                         throw new Error('Component `name` option should be a string');
                     }
-                    if (_.has(this.components, component.name)) {
+                    if (hasName && _.has(this.components, component.name)) {
                         throw new Error('Duplicate component with name "' + component.name + '"');
                     }
                     if (!_.has(component, 'View')) {
                         throw new Error('Component `View` option is required');
                     }
-                    if (!_.isString(component.parent) && !_.isNull(component.parent)) {
+                    if (!hasDefaultParent && _.isUndefined(component.parent)) {
+                        throw new Error('Default root component is not set, add root component first');
+                    }
+                    if (!hasParent && !isRoot) {
                         throw new Error('Component `parent` option should be a string or null');
                     }
-                    if (_.isNull(component.parent) && _.has(component, 'container')) {
+                    if (isRoot && hasContainer) {
                         throw new Error('Root component could not have a container');
                     }
-                    if (_.isString(component.parent) && !_.has(component, 'container')) {
+                    if (hasParent && !hasContainer) {
                         throw new Error('Component `container` option is required for components with parent');
                     }
-                    if (_.has(component, 'container') && !_.isString(component.container)) {
-                        throw new Error('Component `container` option should be a string');
+                    if (hasContainer && !_.isString(component.container)) {
+                        throw new Error('Component `container` option should be a string selector');
+                    }
+                    if (!hasName) {
+                        component.name = _.uniqueId('__COMPONENT_') + '__';
                     }
                     this.components[component.name] = component;
-                    if (_.isNull(this.defaultParent) && _.isNull(component.parent)) {
+                    if (isRoot && (!hasDefaultParent || options.default)) {
                         this.defaultParent = component.name;
                     }
                     if (options.process) {
