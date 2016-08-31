@@ -1,6 +1,20 @@
 'use strict';
 
-require(['esencia', './views/index'], function(Esencia, views) {
+define([
+	'esencia',
+	'layout/index.view',
+	'categories/layout.view',
+	'categories/list.view',
+	'users/layout.view',
+	'users/list.view'
+], function(
+	Esencia,
+	LayoutView,
+	CategoriesLayoutView,
+	CategoriesListView,
+	UsersLayoutView,
+	UsersListView
+) {
 	var router = new Esencia.Router({
 		autoloadModules: false
 	});
@@ -8,21 +22,21 @@ require(['esencia', './views/index'], function(Esencia, views) {
 	router.component({
 		name: 'layout',
 		container: '#app',
-		View: views.Layout
+		View: LayoutView
 	});
 
 	router.component({
 		name: 'categories-layout',
 		parent: 'layout',
 		container: '#content',
-		View: views.CategoriesLayout
+		View: CategoriesLayoutView
 	});
 
 	router.route('categories', {
 		component: {
 			parent: 'categories-layout',
 			container: '#list',
-			View: views.CategoriesList
+			View: CategoriesListView
 		}
 	});
 
@@ -30,20 +44,18 @@ require(['esencia', './views/index'], function(Esencia, views) {
 		name: 'users-layout',
 		parent: 'layout',
 		container: '#content',
-		View: views.UsersLayout
+		View: UsersLayoutView
 	});
 
 	router.route('users', {
 		component: {
 			parent: 'users-layout',
 			container: '#list',
-			View: views.UsersList
+			View: UsersListView
 		}
 	});
 
-	router.route('', function() {
+	if (!Esencia.history.start({pushState: false})) {
 		router.navigate('categories', {replace: true, trigger: true});
-	});
-
-	Esencia.history.start({pushState: false});
+	}
 });

@@ -1,39 +1,53 @@
 'use strict';
 
-require(['esencia', './views/index'], function(Esencia, views) {
+define([
+	'esencia',
+	'layout/index.view',
+	'categories/layout.view',
+	'categories/list.view',
+	'users/layout.view',
+	'users/list.view'
+], function(
+	Esencia,
+	LayoutView,
+	CategoriesLayoutView,
+	CategoriesListView,
+	UsersLayoutView,
+	UsersListView
+) {
 	Esencia.componentsManager.add({
 		name: 'layout',
 		container: '#app',
-		View: views.Layout
+		View: LayoutView
 	});
 
 	Esencia.componentsManager.add({
 		name: 'categories/layout',
 		parent: 'layout',
 		container: '#content',
-		View: views.CategoriesLayout
+		View: CategoriesLayoutView
 	});
 
 	Esencia.componentsManager.add({
 		name: 'categories',
 		parent: 'categories/layout',
 		container: '#list',
-		View: views.CategoriesList
+		View: CategoriesListView
 	});
 
 	Esencia.componentsManager.add({
 		name: 'users/layout',
 		parent: 'layout',
 		container: '#content',
-		View: views.UsersLayout
+		View: UsersLayoutView
 	});
 
 	Esencia.componentsManager.add({
 		name: 'users',
 		parent: 'users/layout',
 		container: '#list',
-		View: views.UsersList
+		View: UsersListView
 	});
 
-	Esencia.componentsManager.process('categories');
+	Esencia.componentsManager.load('categories');
 });

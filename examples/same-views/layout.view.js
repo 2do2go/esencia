@@ -1,9 +1,7 @@
 'use strict';
 
-require(['esencia', 'baseView'], function(Esencia, ExamplesBaseView) {
-	var views = {};
-
-	views.Layout = ExamplesBaseView.extend({
+define(['esencia', 'base.view'], function(Esencia, BaseView) {
+	return BaseView.extend({
 		template: 'layout',
 		events: {
 			'click a': 'onLinkClick'
@@ -13,10 +11,4 @@ require(['esencia', 'baseView'], function(Esencia, ExamplesBaseView) {
 			Esencia.history.navigate(this.$(event.currentTarget).attr('href'), true);
 		}
 	});
-
-	views.Content = ExamplesBaseView.extend({
-		template: 'content'
-	});
-
-	return views;
 });

@@ -2,27 +2,32 @@ body {
 	padding: 15px;
 }
 
-.main-layout {
-	border: 3px solid #fce;
-	padding-bottom: 15px;
-}
-
-.categories-layout {
-	border: 3px solid #efa;
+.block {
 	padding: 0 15px 15px;
 }
 
-.users-layout {
-	border: 3px solid #aef;
-	padding: 0 15px 15px;
+[esencia-view] {
+	position: relative;
+	outline: 1px solid rgba(255, 0, 0, 0.4);
 }
 
-.categories-list {
-	border: 3px solid #18bc9c;
-	padding: 0 15px 15px;
+[esencia-view]:before {
+	display: block;
+	content: attr(esencia-view);
+	position: absolute;
+	top: 0;
+	left: 0;
+	font-size: 12px;
+	padding: 2px 4px;
+	border-radius: 1px;
+	background: rgba(255, 0, 0, 0.2);
+	z-index: 1000;
+	text-shadow: 0 0 2px #fff;
+	pointer-events: none;
+	color: rgba(255, 0, 0, 0.8);
 }
 
-.users-list {
-	border: 3px solid #f39c12;
-	padding: 0 15px 15px;
+[esencia-view]:hover:before {
+	background: rgba(255, 0, 0, 0.7);
+	color: #fff;
 }

@@ -1,7 +1,7 @@
 'use strict';
 
 define([
-	'esencia', 'base.view', './menu'
+	'esencia', 'base.view', './menu.view'
 ], function(Esencia, BaseView, MenuView) {
 	return BaseView.extend({
 		template: 'layout',

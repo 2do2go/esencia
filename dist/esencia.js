@@ -67,6 +67,7 @@
                 this.options = options;
                 this.components = {};
                 this.tree = [];
+                this.currentNames = [];
                 if (this.autoAddRoot)
                     this._addRoot();
                 this.initialize.apply(this, arguments);
@@ -102,7 +103,7 @@
                 add: function (options) {
                     options = _.defaults({}, options, {
                         parent: this.defaultParent,
-                        process: false
+                        load: false
                     });
                     var component = _.pick(options, componentOptions);
                     var hasName = _.has(component, 'name');
@@ -141,8 +142,8 @@
                     if (isRoot && (!hasDefaultParent || options.default)) {
                         this.defaultParent = component.name;
                     }
-                    if (options.process) {
-                        this.process(component.name);
+                    if (options.load) {
+                        this.load(component.name);
                     }
                     return component;
                 },
@@ -156,13 +157,28 @@
                 remove: function (name) {
                     delete this.components[name];
                 },
-                process: function (names, callback) {
+                load: function (names, options, callback) {
+                    if (_.isFunction(names)) {
+                        callback = names;
+                        names = undefined;
+                        options = undefined;
+                    }
+                    if (_.isFunction(options)) {
+                        callback = options;
+                        options = undefined;
+                    }
+                    names = names || this.currentNames;
+                    options = options || {};
+                    callback = callback || _.noop;
                     if (!_.isArray(names))
                         names = [names];
-                    callback = callback || _.noop;
+                    if (!names.length) {
+                        throw new Error('Component name or names to load should be set');
+                    }
                     var tree = this._buildTree(names);
                     var oldTree = this.tree;
                     this.tree = [];
+                    this.currentNames = names;
                     this._applyTree({
                         parent: { children: this.tree },
                         oldTree: oldTree,
@@ -359,7 +375,7 @@
                     var componentNames = _.pluck(components, 'name');
                     name = componentNames.join(',');
                     callback = function () {
-                        self.componentsManager.process(componentNames);
+                        self.componentsManager.load(componentNames);
                     };
                 }
                 name = options.name || name;

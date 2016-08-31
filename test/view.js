@@ -12,7 +12,7 @@ define([
 				var view = new View();
 
 				expect(view).to.contain.keys('el', '$el');
-				expect(view._nestedEventsHash).to.be.eql({
+				expect(view._nestedEvents).to.be.eql({
 					views: {},
 					collections: {},
 					models: {}
@@ -80,36 +80,34 @@ define([
 				});
 			});
 
-			it('should fill _nestedEventsHash from events', function() {
+			it('should fill _nestedEvents from events', function() {
 				var view = new (View.extend({
-					events: {
-						views: {
-							'change #view1': function() {},
-							'add #view1, #view2': 'viewMethod',
-							'remove #view3': 'wrongMethod'
-						},
-						collections: {
-							'change col1': function() {},
-							'add col1, col2': 'colMethod',
-							'remove col3': 'wrongMethod'
-						},
-						models: {
-							'change model1': function() {},
-							'add model1, model2': 'modelMethod',
-							'remove model3': 'wrongMethod'
-						}
+					viewEvents: {
+						'change #view1': function() {},
+						'add #view1, #view2': 'viewMethod',
+						'remove #view3': 'wrongMethod'
+					},
+					collectionEvents: {
+						'change col1': function() {},
+						'add col1, col2': 'colMethod',
+						'remove col3': 'wrongMethod'
+					},
+					modelEvents: {
+						'change model1': function() {},
+						'add model1, model2': 'modelMethod',
+						'remove model3': 'wrongMethod'
 					},
 					viewMethod: function() {},
 					colMethod: function() {},
 					modelMethod: function() {}
 				}))();
 
-				expect(view._nestedEventsHash).to.be.an('object');
-				expect(view._nestedEventsHash.views).to.be.an('object');
-				expect(view._nestedEventsHash.collections).to.be.an('object');
-				expect(view._nestedEventsHash.models).to.be.an('object');
+				expect(view._nestedEvents).to.be.an('object');
+				expect(view._nestedEvents.views).to.be.an('object');
+				expect(view._nestedEvents.collections).to.be.an('object');
+				expect(view._nestedEvents.models).to.be.an('object');
 
-				var nestedEventsHash = {
+				var nestedEvents = {
 					views: {
 						'#view1': ['change', 'add'],
 						'#view2': ['add']
@@ -124,15 +122,15 @@ define([
 					}
 				};
 
-				_(nestedEventsHash).each(function(typeEvents, type) {
-					_(typeEvents).each(function(eventNames, entityName) {
-						expect(view._nestedEventsHash[type]).to.have.property(entityName);
-						expect(view._nestedEventsHash[type][entityName]).to.be.an('array');
-						expect(view._nestedEventsHash[type][entityName]).to.have
+				_(nestedEvents).each(function(typeNestedEvents, type) {
+					_(typeNestedEvents).each(function(eventNames, entityName) {
+						expect(view._nestedEvents[type]).to.have.property(entityName);
+						expect(view._nestedEvents[type][entityName]).to.be.an('array');
+						expect(view._nestedEvents[type][entityName]).to.have
 							.lengthOf(eventNames.length);
 
 						_(eventNames).each(function(eventName, index) {
-							var eventItem = view._nestedEventsHash[type][entityName][index];
+							var eventItem = view._nestedEvents[type][entityName][index];
 							expect(eventItem).to.be.an('object');
 							expect(eventItem.eventName).to.be.equal(eventName);
 							expect(eventItem.handler).to.be.a('function');
@@ -140,9 +138,9 @@ define([
 					});
 				});
 
-				expect(view._nestedEventsHash.views).to.not.have.property('#view3');
-				expect(view._nestedEventsHash.collections).to.not.have.property('#col3');
-				expect(view._nestedEventsHash.models).to.not.have.property('#model3');
+				expect(view._nestedEvents.views).to.not.have.property('#view3');
+				expect(view._nestedEvents.collections).to.not.have.property('#col3');
+				expect(view._nestedEvents.models).to.not.have.property('#model3');
 			});
 		});
 

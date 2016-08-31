@@ -1,7 +1,7 @@
 'use strict';
 
 define([
-	'underscore', 'base.view', './todos.collection', './todo.view', './footer.view'
+	'underscore', 'base.view', 'todos.collection', 'todo.view', 'footer.view'
 ], function(_, BaseView, TodosCollection, TodoView, FooterView) {
 	var View = {
 		el: '#todos-app',

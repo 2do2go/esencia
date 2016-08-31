@@ -14,9 +14,8 @@
 		<div id="app"></div>
 
 		<script id="tmpl-layout" type="text/template">
-			<div class="container main-layout">
+			<div class="container block">
 				<h1>Main layout</h1>
-				<p>Rendered at <% print(new Date().toString()) %></p>
 				<div class="row">
 					<div class="col-sm-4" id="menu"></div>
 					<div class="col-sm-8" id="content"></div>
@@ -32,20 +31,18 @@
 		</script>
 
 		<script id="tmpl-categories-layout" type="text/template">
-			<div class="categories-layout">
+			<div class="block">
 				<h2>Categories layout</h2>
-				<p>Rendered at <% print(new Date().toString()) %> with 300ms delay</p>
 				<div id="list"></div>
 			</div>
 		</script>
 
 		<script id="tmpl-categories-list" type="text/template">
-			<div class="categories-list">
+			<div class="block">
 				<h3>Categories list</h3>
-				<p>Rendered at <% print(new Date().toString()) %> with 300ms delay</p>
 				<ul class="list-group">
 					<% for (var i = 0; i < 5; i++) { %>
-						<li class="list-group-item list-group-item-success">Category <% print(i + 1) %></li>
+						<li class="list-group-item list-group-item-success">Category <% print(i + 1) %> - <% print(Math.random()) %></li>
 					<% } %>
 				</ul>
 				<a id="reset" href="categories" class="btn btn-primary">Reset list</a>
@@ -53,20 +50,18 @@
 		</script>
 
 		<script id="tmpl-users-layout" type="text/template">
-			<div class="users-layout">
+			<div class="block">
 				<h2>Users layout</h2>
-				<p>Rendered at <% print(new Date().toString()) %></p>
 				<div id="list"></div>
 			</div>
 		</script>
 
 		<script id="tmpl-users-list" type="text/template">
-			<div class="users-list">
+			<div class="block">
 				<h3>Users list</h3>
-				<p>Rendered at <% print(new Date().toString()) %></p>
 				<ul class="list-group">
 					<% for (var i = 0; i < 5; i++) { %>
-						<li class="list-group-item list-group-item-warning">User <% print(i + 1) %></li>
+						<li class="list-group-item list-group-item-warning">User <% print(i + 1) %> - <% print(Math.random()) %></li>
 					<% } %>
 				</ul>
 			</div>
@@ -80,6 +75,6 @@
 
 		<script src="../../node_modules/requirejs/require.js"></script>
 		<script src="../config.js"></script>
-		<script>require(['./index']);</script>
+		<script>require(['app']);</script>
 	</body>
 </html>
