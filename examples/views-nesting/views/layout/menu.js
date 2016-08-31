@@ -1,18 +1,14 @@
 'use strict';
 
-define(['baseView'], function(ExamplesBaseView) {
-	return ExamplesBaseView.extend({
+define(['base.view'], function(BaseView) {
+	return BaseView.extend({
 		template: 'menu',
-		events: {
-			'click a': 'onLinkClick',
+		triggers: {
+			'click a': 'click'
 		},
 		isUnchanged: function() {
 			var activeHref = this.$('.active').attr('href');
 			return this.data.selected === activeHref;
-		},
-		onLinkClick: function(event) {
-			event.preventDefault();
-			this.trigger('click', this.$(event.currentTarget).attr('href'));
 		}
 	});
 });

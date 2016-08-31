@@ -80,7 +80,9 @@
                     'parent',
                     'container',
                     'View',
+                    'model',
                     'models',
+                    'collection',
                     'collections',
                     'viewOptions'
                 ];
@@ -256,9 +258,9 @@
                                     oldNode.view.detach();
                                 }
                             }
-                            node.view = new node.component.View(_(node.component).chain().pick('models', 'collections').extend(_.result(node.component, 'viewOptions'), { componentsManager: this }).value());
+                            node.view = new node.component.View(_(node.component).chain().pick('model', 'models', 'collection', 'collections').extend(_.result(node.component, 'viewOptions'), { componentsManager: this }).value());
                             if (node.view.isWaiting()) {
-                                self.listenToOnce(node.view, 'resolve', function () {
+                                self.listenToOnce(node.view, 'esencia:resolve', function () {
                                     iterate(null, node);
                                 });
                             } else {
@@ -311,6 +313,7 @@
             var componentsManager = _require(6);
             var Router = {
                     componentsManager: componentsManager,
+                    namedParameters: true,
                     autoloadModules: true,
                     modulesPath: 'modules/',
                     defaultModuleName: 'main',
@@ -319,6 +322,7 @@
                 };
             var routerOptions = [
                     'componentsManager',
+                    'namedParameters',
                     'autoloadModules',
                     'modulesPath',
                     'defaultModuleName',
@@ -334,7 +338,7 @@
             Router.component = function (options) {
                 return this.componentsManager.add(options);
             };
-            Router.route = function (url, options, callback) {
+            Router.route = function (route, options, callback) {
                 var self = this;
                 if (_.isFunction(options)) {
                     callback = options;
@@ -359,24 +363,25 @@
                     };
                 }
                 name = options.name || name;
-                backbone.Router.prototype.route.call(this, url, name, callback);
+                backbone.Router.prototype.route.call(this, route, name, callback);
             };
-            Router.loadModule = function (params) {
+            Router._extractParameters = function (route, fragment) {
+                return backbone.Router.prototype._extractParameters.call(this, route, fragment);
+            };
+            Router.loadModule = function (fragment) {
                 var self = this;
-                var url = params.url;
-                delete params.url;
-                var moduleName = _(url.split('/')).find(_.identity) || this.defaultModuleName;
+                fragment = fragment || backbone.history.fragment;
+                var moduleName = this.getModuleName(fragment);
                 require([this.modulesPath + moduleName], function (moduleInit) {
                     if (!self.modules[moduleName]) {
                         moduleInit(self);
                         self.modules[moduleName] = true;
-                        self.navigate(url, {
-                            replace: true,
-                            force: true,
-                            qs: params
-                        });
+                        backbone.history.loadUrl(fragment);
                     }
                 }, this.onModuleError);
+            };
+            Router.getModuleName = function (fragment) {
+                return _(fragment.split('/')).find(_.identity) || this.defaultModuleName;
             };
             module.exports = backbone.Router.extend(Router);
         },
@@ -387,13 +392,10 @@
             var $ = backbone.$;
             var splice = Array.prototype.splice;
             var delegateEventSplitter = /^(\S+)\s*(.*)$/;
-            var nestedEntityTypes = [
-                    'views',
-                    'collections',
-                    'models'
-                ];
             function isContainerSkipped(container, options) {
-                return Boolean(options.exclude && _.contains(options.exclude, container) || options.include && !_.contains(options.include, container));
+                var exclude = options.exclude;
+                var include = options.include;
+                return Boolean(exclude && _.contains(_.isArray(exclude) ? exclude : [exclude], container) || include && !_.contains(_.isArray(include) ? include : [include], container));
             }
             var View = {
                     templateHelpers: {},
@@ -401,40 +403,58 @@
                     waitAvailable: true,
                     attached: false
                 };
-            var viewOptions = [
+            var nestedEntityTypes = [
                     'views',
-                    'collections',
                     'models',
-                    'data',
-                    'events',
-                    'templateHelpers',
-                    'componentsManager'
+                    'collections'
                 ];
+            var nestedEventTypes = [
+                    'viewEvents',
+                    'modelEvents',
+                    'collectionEvents'
+                ];
+            var resultableOptions = _.union(nestedEntityTypes, nestedEventTypes, [
+                    'ui',
+                    'triggers'
+                ]);
+            var viewOptions = _.union(resultableOptions, [
+                    'model',
+                    'collection',
+                    'data',
+                    'componentsManager',
+                    'template',
+                    'templateHelpers'
+                ]);
             View.constructor = function (options) {
                 var self = this;
                 options = options || {};
                 this.data = {};
                 _.extend(this, _.pick(options, viewOptions));
                 this.options = options;
-                this._prepareEvents();
-                _(nestedEntityTypes).each(function (type) {
-                    self[type] = _.result(self, type, {});
+                _(resultableOptions).each(function (key) {
+                    self[key] = _.result(self, key, {});
                 });
+                this._prepareNestedEvents();
+                this._prepareModels();
+                this._prepareCollections();
                 this._prepareViews();
-                backbone.View.apply(this, arguments);
+                _(this.views).each(function (viewsGroup, container) {
+                    self.delegateNestedEvents('views', container, viewsGroup);
+                });
+                backbone.View.call(this, _.omit(options, 'model', 'collection'));
                 _(this.views).each(function (views) {
                     _(views).each(function (view) {
                         if (view.isWaiting()) {
-                            self.listenToOnce(view, 'resolve', self.wait());
+                            self.listenToOnce(view, 'esencia:resolve', self.wait());
                         }
                     });
                 });
                 this.waitAvailable = false;
-                _(this.collections).each(function (collection, key) {
-                    self.delegateNestedEvents('collections', key, collection);
+                _(this.collections).each(function (collection, name) {
+                    self.delegateNestedEvents('collections', name, collection);
                 });
-                _(this.models).each(function (model, key) {
-                    self.delegateNestedEvents('models', key, model);
+                _(this.models).each(function (model, name) {
+                    self.delegateNestedEvents('models', name, model);
                 });
             };
             View.setData = function (data) {
@@ -451,11 +471,12 @@
                 }
                 var self = this;
                 this.waitsCounter++;
+                this.trigger('esencia:wait');
                 return _.once(function () {
                     _.defer(function () {
                         self.waitsCounter--;
                         if (!self.isWaiting()) {
-                            self.trigger('resolve');
+                            self.trigger('esencia:resolve');
                         }
                     });
                 });
@@ -488,6 +509,7 @@
                     if (!this.$el.length)
                         this._ensureElement();
                 }
+                this.trigger('esencia:render');
                 this.renderViews(options);
                 if (!this.parent || this.$container) {
                     this.attachViews(options);
@@ -663,21 +685,58 @@
                 if ($previousEl && this.$container) {
                     $previousEl.replaceWith(this.$el);
                 }
+                this.ensureUI();
                 return this;
             };
-            View.delegateEvents = function (events) {
-                events = events || _.result(this, 'events');
-                if (!events)
-                    return this;
-                events = _.omit(events, nestedEntityTypes);
-                return backbone.View.prototype.delegateEvents.call(this, events);
-            };
-            View.delegateNestedEvents = function (type, key, entities) {
+            View.ensureUI = function () {
                 var self = this;
+                this.$ui = _(this.ui).mapObject(function (selector) {
+                    return self.$(selector);
+                });
+                return this;
+            };
+            View.delegateTriggers = function (triggers) {
+                triggers = triggers || _.result(this, 'triggers');
+                if (!triggers)
+                    return this;
+                var self = this;
+                this.undelegateTriggers();
+                _(triggers).each(function (event, key) {
+                    var method = function () {
+                        self.trigger.apply(self, [event].concat(_.toArray(arguments)));
+                    };
+                    var match = key.match(delegateEventSplitter);
+                    self.delegateTrigger(match[1], match[2], method);
+                });
+                return this;
+            };
+            View.delegateTrigger = function (eventName, selector, listener) {
+                this.$el.on(eventName + '.delegateTriggers' + this.cid, selector, listener);
+                return this;
+            };
+            View.undelegateTriggers = function () {
+                if (this.$el)
+                    this.$el.off('.delegateTriggers' + this.cid);
+                return this;
+            };
+            View.undelegateTrigger = function (eventName, selector, listener) {
+                this.$el.off(eventName + '.delegateTriggers' + this.cid, selector, listener);
+                return this;
+            };
+            View.delegateNestedEvents = function (type, name, entities) {
+                if (!_.contains(nestedEntityTypes, type)) {
+                    throw new Error('Wrong entity type "' + type + '", available values: ' + nestedEntityTypes.join(', '));
+                }
+                var self = this;
+                if (!entities)
+                    entities = this[type][name];
+                if (!entities)
+                    return this;
                 if (!_.isArray(entities))
                     entities = [entities];
-                var listeners = this._nestedEventsHash[type][key];
+                var listeners = this._nestedEvents[type][name];
                 if (listeners) {
+                    this.undelegateNestedEvents(entities);
                     _(listeners).each(function (listener) {
                         _(entities).each(function (entity) {
                             self.listenTo(entity, listener.eventName, listener.handler);
@@ -695,31 +754,27 @@
                 });
                 return this;
             };
-            View._prepareEvents = function (events) {
+            View._prepareNestedEvents = function () {
                 var self = this;
-                this._nestedEventsHash = {};
-                _(nestedEntityTypes).each(function (type) {
-                    self._nestedEventsHash[type] = {};
+                this._nestedEvents = {};
+                _(nestedEntityTypes).each(function (entityType) {
+                    self._nestedEvents[entityType] = {};
                 });
-                events = events || _.result(this, 'events');
-                if (!events)
-                    return;
-                _(nestedEntityTypes).each(function (type) {
-                    var typeEventsHash = self._nestedEventsHash[type];
-                    if (!_.has(events, type) || !_.isObject(events[type]))
-                        return;
-                    _(events[type]).each(function (method, key) {
+                _(nestedEventTypes).each(function (eventType, index) {
+                    var entityType = nestedEntityTypes[index];
+                    var entityEventsHash = self._nestedEvents[entityType];
+                    _(self[eventType]).each(function (method, key) {
                         if (!_.isFunction(method))
                             method = self[method];
                         if (!method)
                             return;
                         var match = key.match(delegateEventSplitter);
                         var eventName = match[1];
-                        var entityKeys = match[2].replace(/ *, */g, ',').split(',');
+                        var entityNames = match[2].replace(/ *, */g, ',').split(',');
                         method = _.bind(method, self);
-                        _(entityKeys).each(function (entityKey) {
-                            typeEventsHash[entityKey] = typeEventsHash[entityKey] || [];
-                            typeEventsHash[entityKey].push({
+                        _(entityNames).each(function (entityName) {
+                            entityEventsHash[entityName] = entityEventsHash[entityName] || [];
+                            entityEventsHash[entityName].push({
                                 eventName: eventName,
                                 handler: method
                             });
@@ -732,9 +787,36 @@
                 _(this.views).each(function (views, container) {
                     if (!_.isArray(views))
                         views = [views];
-                    self.views[container] = views;
-                    self.delegateNestedEvents('views', container, views);
+                    self.views[container] = views = _(views).map(function (view) {
+                        if (_.isFunction(view))
+                            view = new view();
+                        return view;
+                    });
                 });
+            };
+            View._prepareModels = function () {
+                var self = this;
+                _(this.models).each(function (model, name) {
+                    if (_.isFunction(model))
+                        self.models[name] = new model();
+                });
+                if (this.model) {
+                    if (_.isFunction(this.model))
+                        this.model = new this.model();
+                    this.models[''] = this.model;
+                }
+            };
+            View._prepareCollections = function () {
+                var self = this;
+                _(this.collections).each(function (collection, name) {
+                    if (_.isFunction(collection))
+                        self.collections[name] = new collection();
+                });
+                if (this.collection) {
+                    if (_.isFunction(this.collection))
+                        this.collection = new this.collection();
+                    this.collections[''] = this.collection;
+                }
             };
             View.attachViews = function (options) {
                 options = options || {};
@@ -761,9 +843,10 @@
                     previousView.detach();
                 this.$el.data('esencia-view', this).attr('esencia-view', this.cid);
                 this.delegateEvents();
+                this.delegateTriggers();
                 this.attached = true;
                 this.afterAttach();
-                this.trigger('attach');
+                this.trigger('esencia:attach');
                 return this;
             };
             View.detachViews = function () {
@@ -783,10 +866,11 @@
             View.detach = function () {
                 if (!this.attached)
                     return this;
-                this.trigger('detach');
+                this.trigger('esencia:detach');
                 this.beforeDetach();
                 this.$el.removeData('esencia-view').removeAttr('esencia-view');
                 this.undelegateEvents();
+                this.undelegateTriggers();
                 this.attached = false;
                 return this;
             };

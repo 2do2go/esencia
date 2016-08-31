@@ -24,7 +24,7 @@
 							<div id="todos-wrap" style="display: none;">
 								<div class="checkbox todos-toggle-all"><label><input id="toggle-all" type="checkbox"> Mark all as complete</label></div>
 								<ul id="todos" class="todos"></ul>
-								<div id="todos-footer"></div>
+								<div id="footer"></div>
 							</div>
 						</section>
 					</div>
@@ -35,7 +35,7 @@
 		</div>
 
 		<script id="tmpl-todos-item" type="text/template">
-			<li class="js-item todos_item<% print(todo.completed ? ' todos_item__completed' : '') %>">
+			<li class="js-item todos_item<% print(todo.completed ? ' todos_item__completed' : '') %><% print(todo.editing ? ' todos_item__editing' : '') %>">
 				<div class="todos_item-inner">
 					<input type="checkbox" class="js-item-toggle todos_item-toggle"<% print(todo.completed ? ' checked' : '') %>>
 					<div class="js-item-title todos_item-title"><% print(todo.title) %></div>
@@ -47,8 +47,8 @@
 
 		<script id="tmpl-todos-footer" type="text/template">
 			<footer class="todos-footer bg-default clearfix">
-				<div class="todos-count pull-left"><strong><% print(left) %></strong> items left</div>
-				<% if (completed) { %><button id="clear-completed" type="button" class="btn btn-primary btn-xs pull-right">Clear <strong><% print(completed) %></strong> completed item</button><% } %>
+				<div class="todos-count pull-left"><strong><% print(totalCount - completedCount) %></strong> items left</div>
+				<% if (completedCount) { %><button id="clear-completed" type="button" class="btn btn-primary btn-xs pull-right">Clear <strong><% print(completedCount) %></strong> completed item</button><% } %>
 			</footer>
 		</script>
 

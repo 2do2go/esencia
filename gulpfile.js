@@ -100,4 +100,4 @@ gulp.task('watch', function() {
 	return gulp.watch(SRC + '**/*.js', ['build']);
 });
 
-gulp.task('dev', gulpSequence('clean', 'build', 'watch'));
+gulp.task('default', gulpSequence('clean', 'build', 'watch'));

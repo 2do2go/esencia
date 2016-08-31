@@ -1,7 +1,7 @@
 'use strict';
 
-define(['baseView'], function(ExamplesBaseView) {
-	return ExamplesBaseView.extend({
+define(['base.view'], function(BaseView) {
+	return BaseView.extend({
 		template: 'users-list'
 	});
 });

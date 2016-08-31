@@ -1,25 +1,24 @@
 'use strict';
 
 define([
-	'esencia', 'baseView', './menu'
-], function(Esencia, ExamplesBaseView, MenuView) {
-	return ExamplesBaseView.extend({
+	'esencia', 'base.view', './menu'
+], function(Esencia, BaseView, MenuView) {
+	return BaseView.extend({
 		template: 'layout',
-		events: {
-			views: {
-				'click #menu': 'onMenuClick'
-			}
+		views: {
+			'#menu': MenuView
 		},
-		views: function() {
-			return {'#menu': new MenuView()};
+		viewEvents: {
+			'click #menu': 'onMenuClick'
 		},
 		setData: function() {
 			this.getView('#menu').setData({
 				selected: Esencia.history.fragment.match(/[^\?\/]+/)[0]
 			});
 		},
-		onMenuClick: function(item) {
-			Esencia.history.navigate(item, true);
+		onMenuClick: function(event) {
+			event.preventDefault();
+			Esencia.history.navigate(this.$(event.currentTarget).attr('href'), true);
 		}
 	});
 });

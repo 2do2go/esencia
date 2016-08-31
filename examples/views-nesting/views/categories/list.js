@@ -1,7 +1,7 @@
 'use strict';
 
-define(['esencia', 'baseView'], function(Esencia, ExamplesBaseView) {
-	return ExamplesBaseView.extend({
+define(['esencia', 'base.view'], function(Esencia, BaseView) {
+	return BaseView.extend({
 		template: 'categories-list',
 		events: {
 			'click #reset': 'onResetClick'
