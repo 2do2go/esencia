@@ -381,8 +381,43 @@
                 name = options.name || name;
                 backbone.Router.prototype.route.call(this, route, name, callback);
             };
+            var namedParam = /(\(\?)?:\w+/g, splatParam = /\*\w+/g, namesPattern = /[\:\*]([^\:\?\/]+)/g;
+            Router._routeToRegExp = function (route) {
+                var splatMatch = splatParam.exec(route) || { index: -1 }, namedMatch = namedParam.exec(route) || { index: -1 }, paramNames = route.match(namesPattern) || [];
+                route = backbone.Router.prototype._routeToRegExp.call(this, route);
+                if (splatMatch.index >= 0) {
+                    if (namedMatch >= 0) {
+                        route.splatMatch = splatMatch.index - namedMatch.index;
+                    } else {
+                        route.splatMatch = -1;
+                    }
+                }
+                route.paramNames = _(paramNames).map(function (name) {
+                    return name.replace(/\)$/, '').substring(1);
+                });
+                return route;
+            };
             Router._extractParameters = function (route, fragment) {
-                return backbone.Router.prototype._extractParameters.call(this, route, fragment);
+                var params = backbone.Router.prototype._extractParameters.call(this, route, fragment);
+                var namedParams = {};
+                var length = params.length;
+                if (route.splatMatch) {
+                    if (route.splatMatch < 0) {
+                        return params;
+                    } else {
+                        length = length - 1;
+                    }
+                }
+                console.log('>>>>>>>>', length, route.paramNames);
+                for (var i = 0; i < length; i++) {
+                    if (_.isString(params[i])) {
+                        if (route.paramNames && route.paramNames.length >= i - 1) {
+                            namedParams[route.paramNames[i]] = params[i];
+                        }
+                    }
+                }
+                console.log('>>>>>>>>', namedParams);
+                return this.namedParameters ? [namedParams] : params;
             };
             Router.loadModule = function (fragment) {
                 var self = this;
