@@ -1,6 +1,6 @@
 'use strict';
 
-define(['base.view'], function(BaseView) {
+define(['common/base.view'], function(BaseView) {
 	var View = {
 		template: 'todos-footer',
 		triggers: {

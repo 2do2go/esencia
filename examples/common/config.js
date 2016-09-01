@@ -6,6 +6,6 @@ require.config({
 		backbone: '../../node_modules/backbone/backbone-min',
 		underscore: '../../node_modules/underscore/underscore-min',
 		esencia: '../../dist/esencia.min',
-		'base.view': '../base.view'
+		'common': '../common'
 	}
 });

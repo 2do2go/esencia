@@ -1,6 +1,6 @@
 'use strict';
 
-define(['esencia', 'base.view'], function(Esencia, BaseView) {
+define(['esencia', 'common/base.view'], function(Esencia, BaseView) {
 	return BaseView.extend({
 		template: 'layout',
 		events: {

@@ -1,6 +1,6 @@
 'use strict';
 
-define(['base.view'], function(BaseView) {
+define(['common/base.view'], function(BaseView) {
 	return BaseView.extend({
 		template: 'content'
 	});

@@ -1,18 +1,14 @@
 'use strict';
 
-define(['base.view'], function(BaseView) {
+define(['common/base.view'], function(BaseView) {
 	var View = {
 		template: 'todos-item',
 		events: {
-			'dblclick .js-item-title': 'onDblClick',
-			'change .js-item-toggle': 'onToggleChange',
-			'blur .js-item-input': 'stopEditing',
 			'keydown .js-item-input': 'onInputKeydown',
-			'click .js-item-remove': 'onRemoveClick',
-		},
-		modelEvents: {
-			'remove': 'remove',
-			'change': 'onTodoChange'
+			'dblclick .js-item-title': 'startEditing',
+			'blur .js-item-input': 'stopEditing',
+			'change .js-item-toggle': 'toggleCompleted',
+			'click .js-item-remove': 'destroyModel'
 		},
 		ui: {
 			input: '.js-item-input',
@@ -24,13 +20,8 @@ define(['base.view'], function(BaseView) {
 		return {todo: this.model.toJSON()};
 	};
 
-	View.stopEditing = function() {
-		this.model.unset('editing');
-	};
-
-	View.onDblClick = function() {
-		if (this.model.get('editing')) return;
-		this.model.set('editing', true);
+	View.afterAttach = function() {
+		if (this.model.get('editing')) this.$ui.input.focus().select();
 	};
 
 	View.onInputKeydown = function(event) {
@@ -45,17 +36,20 @@ define(['base.view'], function(BaseView) {
 		}
 	};
 
-	View.onRemoveClick = function() {
-		this.model.destroy();
+	View.startEditing = function() {
+		this.model.set('editing', true);
 	};
 
-	View.onToggleChange = function() {
+	View.stopEditing = function() {
+		this.model.unset('editing');
+	};
+
+	View.toggleCompleted = function() {
 		this.model.set('completed', this.$ui.toggle.prop('checked'));
 	};
 
-	View.onTodoChange = function() {
-		this.render({force: true});
-		if (this.model.get('editing')) this.$ui.input.focus().select();
+	View.destroyModel = function() {
+		this.model.destroy();
 	};
 
 	return BaseView.extend(View);

@@ -1,28 +1,33 @@
 'use strict';
 
 define([
-	'underscore', 'base.view', 'todos.collection', 'todo.view', 'footer.view'
-], function(_, BaseView, TodosCollection, TodoView, FooterView) {
+	'esencia', 'common/utils', 'todos.collection', 'todo.view', 'footer.view'
+], function(Esencia, utils, TodosCollection, TodoView, FooterView) {
 	var View = {
 		el: '#todos-app',
 		collection: TodosCollection,
+		ItemView: TodoView,
+		itemsContainer: '#todos',
 		events: {
 			'keydown #new-todo-title': 'onNewTodoTitleKeydown',
-			'change #toggle-all': 'onToggleAllChange',
+			'change #toggle-all': 'toggleCompleted',
 		},
 		viewEvents: {
 			'clearCompleted #footer': 'clearCompleted'
 		},
 		collectionEvents: {
-			'add': 'onTodosAdd',
-			'update': 'onTodosUpdate',
-			'change:completed': 'onTodosUpdate'
+			'update': 'updateTodos',
+			'change:completed': 'updateTodos'
 		},
 		ui: {
 			newTodoTitle: '#new-todo-title',
 			toggleAll: '#toggle-all',
 			todosWrap: '#todos-wrap'
 		}
+	};
+
+	View.renderTemplate = function(template, data) {
+		return utils.render(template, data);
 	};
 
 	View.onNewTodoTitleKeydown = function(event) {
@@ -41,16 +46,11 @@ define([
 		this.collection.remove(this.collection.getCompleted());
 	};
 
-	View.onToggleAllChange = function() {
+	View.toggleCompleted = function() {
 		this.collection.toggle(this.$ui.toggleAll.prop('checked'));
 	};
 
-	View.onTodosAdd = function(model) {
-		this.appendView(new TodoView({model: model}), '#todos');
-		this.render({include: '#todos'});
-	};
-
-	View.onTodosUpdate = function() {
+	View.updateTodos = function() {
 		if (this.collection.length) {
 			this.$ui.todosWrap.show();
 			this.$ui.toggleAll.prop('checked', this.collection.isCompleted());
@@ -71,5 +71,5 @@ define([
 		}
 	};
 
-	return BaseView.extend(View);
+	return Esencia.CollectionView.extend(View);
 });
