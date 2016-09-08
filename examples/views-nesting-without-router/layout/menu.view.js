@@ -3,12 +3,14 @@
 define(['common/base.view'], function(BaseView) {
 	return BaseView.extend({
 		template: 'menu',
-		triggers: {
-			'click a': 'click',
+		data: {
+			selected: 'categories'
 		},
-		isUnchanged: function() {
-			var activeHref = this.$('.active').data('href');
-			return this.data.selected === activeHref;
+		triggers: {
+			'click a': 'click'
+		},
+		getTemplateData: function() {
+			return {selected: this.data.selected};
 		}
 	});
 });

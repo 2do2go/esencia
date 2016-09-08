@@ -9,7 +9,7 @@ define(['esencia', 'common/base.view'], function(Esencia, BaseView) {
 		initialize: function() {
 			setTimeout(this.wait(), 300);
 		},
-		isUnchanged: function() {
+		isStatesEqual: function() {
 			return false;
 		},
 		onResetClick: function(event) {

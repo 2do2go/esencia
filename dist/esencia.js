@@ -81,7 +81,7 @@
             CollectionView._onCollectionChange = function (model) {
                 var index = _.indexOf(this.collection.models, model);
                 var view = this.getView(this.itemsContainer, index);
-                view.render({ force: true });
+                view.render();
             };
             CollectionView._onCollectionRemove = function (model, collection, options) {
                 var view = this.getView(this.itemsContainer, options.index);
@@ -96,7 +96,7 @@
             var View = _require(5);
             var extend = _require(9);
             function isTreeNodeChanged(oldNode, node) {
-                return Boolean(!oldNode || oldNode.component.name !== node.component.name || !oldNode.view || oldNode.view instanceof node.component.View === false || oldNode.view.isWaiting() || !oldNode.view.attached || !oldNode.view.isUnchanged());
+                return Boolean(!oldNode || oldNode.component.name !== node.component.name || !oldNode.view || oldNode.view instanceof node.component.View === false || oldNode.view.isWaiting() || !oldNode.view.attached || oldNode.view.loadState());
             }
             var ComponentsManager = function (options) {
                 options = options || {};
@@ -202,7 +202,12 @@
                     }
                     if (_.isFunction(options)) {
                         callback = options;
-                        options = undefined;
+                        if (_.isArray(names) || _.isString(names)) {
+                            options = undefined;
+                        } else {
+                            options = names;
+                            names = undefined;
+                        }
                     }
                     names = names || this.currentNames;
                     options = options || {};
@@ -212,15 +217,15 @@
                     if (!names.length) {
                         throw new Error('Component name or names to load should be set');
                     }
-                    var tree = this._buildTree(names);
-                    var oldTree = this.tree;
+                    var treeNodes = this._buildTree(names);
+                    var oldTreeNodes = this.tree;
                     this.tree = [];
                     this.currentNames = names;
                     this._applyTree({
                         parent: { children: this.tree },
-                        oldTree: oldTree,
-                        tree: tree
-                    }, callback);
+                        oldNodes: oldTreeNodes,
+                        nodes: treeNodes
+                    }, options, callback);
                 },
                 _buildTree: function (names) {
                     var self = this;
@@ -272,15 +277,14 @@
                     }
                     return tree;
                 },
-                _applyTree: function (params, callback) {
+                _applyTree: function (treeParams, options, callback) {
                     var self = this;
-                    var parent = params.parent;
-                    var afterCallback = _.after(params.tree.length, callback);
+                    var parent = treeParams.parent;
+                    var afterCallback = _.after(treeParams.nodes.length, callback);
                     var iterate = function (oldNode, node) {
                         var container = node.component.container;
                         var children = node.children;
                         var oldChildren = oldNode ? oldNode.children : [];
-                        node.view.setData();
                         if (!node.view.attached && container) {
                             parent.view.setView(node.view, container).renderViews({ include: [container] }).attachViews({ include: [container] });
                         } else {
@@ -295,12 +299,12 @@
                         parent.children.push(node);
                         self._applyTree({
                             parent: node,
-                            oldTree: oldChildren,
-                            tree: children
-                        }, afterCallback);
+                            oldNodes: oldChildren,
+                            nodes: children
+                        }, options, afterCallback);
                     };
-                    _(params.tree).each(function (node, index) {
-                        var oldNode = params.oldTree[index] || null;
+                    _(treeParams.nodes).each(function (node, index) {
+                        var oldNode = treeParams.oldNodes[index] || null;
                         if (isTreeNodeChanged(oldNode, node)) {
                             if (oldNode && oldNode.view) {
                                 if (oldNode.component.container) {
@@ -311,7 +315,7 @@
                                     oldNode.view.detach();
                                 }
                             }
-                            node.view = new node.component.View(_(node.component).chain().pick('model', 'models', 'collection', 'collections').extend(_.result(node.component, 'viewOptions'), { componentsManager: this }).value());
+                            node.view = new node.component.View(_(node.component).chain().pick('model', 'models', 'collection', 'collections').extend(_.result(node.component, 'viewOptions'), { componentsManager: self }, options.viewOptions).value());
                             if (node.view.isWaiting()) {
                                 self.listenToOnce(node.view, 'esencia:resolve', function () {
                                     iterate(null, node);
@@ -321,6 +325,7 @@
                             }
                         } else {
                             node.view = oldNode.view;
+                            node.view.modifyState(options.viewOptions);
                             iterate(oldNode, node);
                         }
                     });
@@ -364,6 +369,7 @@
             var _ = _require(11);
             var backbone = _require(10);
             var componentsManager = _require(7);
+            var namesPattern = /[\:\*]([^\:\?\/]+)/g;
             var Router = {
                     componentsManager: componentsManager,
                     namedParameters: true,
@@ -412,23 +418,22 @@
                     var componentNames = _.pluck(components, 'name');
                     name = componentNames.join(',');
                     callback = function () {
-                        self.componentsManager.load(componentNames);
+                        var viewOptions = {
+                                data: {
+                                    fragment: backbone.history.fragment,
+                                    params: self.namedParameters ? _.first(arguments) : _.initial(arguments),
+                                    query: _.last(arguments)
+                                }
+                            };
+                        self.componentsManager.load(componentNames, { viewOptions: viewOptions });
                     };
                 }
                 name = options.name || name;
                 backbone.Router.prototype.route.call(this, route, name, callback);
             };
-            var namedParam = /(\(\?)?:\w+/g, splatParam = /\*\w+/g, namesPattern = /[\:\*]([^\:\?\/]+)/g;
             Router._routeToRegExp = function (route) {
-                var splatMatch = splatParam.exec(route) || { index: -1 }, namedMatch = namedParam.exec(route) || { index: -1 }, paramNames = route.match(namesPattern) || [];
+                var paramNames = route.match(namesPattern) || [];
                 route = backbone.Router.prototype._routeToRegExp.call(this, route);
-                if (splatMatch.index >= 0) {
-                    if (namedMatch >= 0) {
-                        route.splatMatch = splatMatch.index - namedMatch.index;
-                    } else {
-                        route.splatMatch = -1;
-                    }
-                }
                 route.paramNames = _(paramNames).map(function (name) {
                     return name.replace(/\)$/, '').substring(1);
                 });
@@ -436,25 +441,23 @@
             };
             Router._extractParameters = function (route, fragment) {
                 var params = backbone.Router.prototype._extractParameters.call(this, route, fragment);
+                if (!this.namedParameters || !route.paramNames)
+                    return params;
                 var namedParams = {};
-                var length = params.length;
-                if (route.splatMatch) {
-                    if (route.splatMatch < 0) {
-                        return params;
+                var paramsLength = params.length;
+                _(route.paramNames).find(function (name, index) {
+                    if (_.isString(params[index]) && index < paramsLength - 1) {
+                        namedParams[name] = params[index];
+                        return false;
                     } else {
-                        length = length - 1;
+                        return true;
                     }
-                }
-                console.log('>>>>>>>>', length, route.paramNames);
-                for (var i = 0; i < length; i++) {
-                    if (_.isString(params[i])) {
-                        if (route.paramNames && route.paramNames.length >= i - 1) {
-                            namedParams[route.paramNames[i]] = params[i];
-                        }
-                    }
-                }
-                console.log('>>>>>>>>', namedParams);
-                return this.namedParameters ? [namedParams] : params;
+                });
+                var qs = params[paramsLength - 1];
+                return [
+                    namedParams,
+                    qs
+                ];
             };
             Router.loadModule = function (fragment) {
                 var self = this;
@@ -502,22 +505,28 @@
                     'collectionEvents',
                     'viewEvents'
                 ];
-            var viewOptions = _.union(entityTypes, entityEventTypes, [
-                    'model',
-                    'collection',
-                    'data',
+            var additionalViewOptions = [
                     'componentsManager',
                     'template',
                     'templateHelpers',
                     'ui',
                     'triggers'
-                ]);
+                ];
+            var stateOptions = [
+                    'data',
+                    'models',
+                    'collections',
+                    'model',
+                    'collection'
+                ];
+            var viewOptions = _.union(entityTypes, entityEventTypes, additionalViewOptions, stateOptions);
             View.constructor = function (options) {
                 var self = this;
                 options = options || {};
-                this.data = {};
                 _.extend(this, _.pick(options, viewOptions));
                 this.options = options;
+                this.data = _.result(this, 'data', {});
+                this.templateData = {};
                 this._prepareEntityEvents();
                 this._prepareModels();
                 this._prepareCollections();
@@ -526,6 +535,7 @@
                     self.delegateEntityEvents('views', container, views);
                 });
                 backbone.View.call(this, _.omit(options, 'model', 'collection'));
+                this.modifyViewsState(options);
                 _(this.views).each(function (views) {
                     _(views).each(function (view) {
                         if (view.isWaiting()) {
@@ -537,17 +547,85 @@
                 _(this.collections).each(function (collection, name) {
                     self.delegateEntityEvents('collections', name, collection);
                 });
+                if (this.collection) {
+                    this.delegateEntityEvents('collections', '', this.collection);
+                }
                 _(this.models).each(function (model, name) {
                     self.delegateEntityEvents('models', name, model);
                 });
+                if (this.model) {
+                    this.delegateEntityEvents('models', '', this.model);
+                }
             };
-            View.setData = function (data) {
-                if (data)
-                    this.data = data;
+            View.modifyState = function (state, options) {
+                state = state || {};
+                options = options || {};
+                var self = this;
+                _(stateOptions).each(function (stateOption) {
+                    if (!_.has(state, stateOption))
+                        return;
+                    var targetObj, stateObj, objKeys;
+                    if (_.contains([
+                            'data',
+                            'models',
+                            'collections'
+                        ], stateOption)) {
+                        stateObj = state[stateOption];
+                        if (!_.isObject(stateObj)) {
+                            throw new Error('State property `' + stateOption + '` should be an object');
+                        }
+                        targetObj = self[stateOption];
+                        objKeys = _.keys(stateObj);
+                    } else {
+                        targetObj = self;
+                        stateObj = state;
+                        objKeys = [stateOption];
+                    }
+                    _(objKeys).each(function (objKey) {
+                        if (_.has(targetObj, objKey) && _.contains([
+                                'models',
+                                'collections',
+                                'model',
+                                'collection'
+                            ], stateOption)) {
+                            self.undelegateEntityEvents(targetObj[objKey]);
+                        }
+                        targetObj[objKey] = stateObj[objKey];
+                        if (_.contains([
+                                'models',
+                                'collections'
+                            ], stateOption)) {
+                            self.delegateEntityEvents(stateOption, objKey, stateObj[objKey]);
+                        }
+                        if (_.contains([
+                                'model',
+                                'collection'
+                            ], stateOption)) {
+                            self.delegateEntityEvents(stateOption + 's', '', stateObj[objKey]);
+                        }
+                    });
+                });
+                this.modifyViewsState(state, options);
+                if (options.load) {
+                    this.loadState();
+                }
                 return this;
             };
-            View.isUnchanged = function () {
-                return true;
+            View.loadState = function () {
+                var stateChanged = false;
+                if (this.template) {
+                    var templateData = this.getTemplateData();
+                    stateChanged = !this.isStatesEqual(this.templateData, templateData);
+                    if (stateChanged)
+                        this.templateData = templateData;
+                }
+                return stateChanged;
+            };
+            View.modifyViewsState = function () {
+                return this;
+            };
+            View.isStatesEqual = function (oldState, newState) {
+                return _.isEqual(oldState, newState);
             };
             View.wait = function () {
                 if (!this.waitAvailable) {
@@ -573,10 +651,11 @@
                     return this;
                 options = options || {};
                 if (this.template) {
-                    if (options.force || !this.attached || !this.isUnchanged()) {
+                    var stateChanged = this.loadState();
+                    if (options.force || !this.attached || stateChanged) {
                         this.detach();
-                        var data = _(this).chain().result('templateHelpers').extend(this.getTemplateData()).value();
-                        var html = this.renderTemplate(this.template, data);
+                        var locals = _(this).chain().result('templateHelpers').extend(this.templateData).value();
+                        var html = this.renderTemplate(this.template, locals);
                         if (!_.isString(html)) {
                             throw new Error('`renderTemplate` method should return a HTML string');
                         }
@@ -605,13 +684,13 @@
                 return this._render(options);
             };
             View.getTemplateData = function () {
-                return this.data;
+                return {};
             };
-            View.renderTemplate = function (template, data) {
+            View.renderTemplate = function (template, locals) {
                 if (!_.isFunction(template)) {
                     throw new Error('View `template` should be a function');
                 }
-                return template(data);
+                return template(locals);
             };
             View.renderViews = function (options) {
                 var self = this;
@@ -896,10 +975,8 @@
                 this.models = _(this.models).mapObject(function (model) {
                     return _.isFunction(model) ? new model() : model;
                 });
-                if (this.model) {
-                    if (_.isFunction(this.model))
-                        this.model = new this.model();
-                    this.models[''] = this.model;
+                if (this.model && _.isFunction(this.model)) {
+                    this.model = new this.model();
                 }
             };
             View._prepareCollections = function () {
@@ -907,10 +984,8 @@
                 this.collections = _(this.collections).mapObject(function (collection) {
                     return _.isFunction(collection) ? new collection() : collection;
                 });
-                if (this.collection) {
-                    if (_.isFunction(this.collection))
-                        this.collection = new this.collection();
-                    this.collections[''] = this.collection;
+                if (this.collection && _.isFunction(this.collection)) {
+                    this.collection = new this.collection();
                 }
             };
             View.attachViews = function (options) {

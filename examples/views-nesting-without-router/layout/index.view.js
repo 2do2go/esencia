@@ -5,19 +5,23 @@ define([
 ], function(Esencia, BaseView, MenuView) {
 	return BaseView.extend({
 		template: 'layout',
-		views: function() {
-			return {
-				'#menu': new MenuView({data: {selected: 'categories'}})
-			};
+		views: {
+			'#menu': MenuView
 		},
 		viewEvents: {
 			'click #menu': 'onMenuClick'
 		},
+		modifyViewsState: function() {
+			this.getView('#menu').modifyState({
+				data: {
+					selected: this.componentsManager.currentNames[0]
+				}
+			});
+		},
 		onMenuClick: function(event) {
 			event.preventDefault();
-			var item = this.$(event.currentTarget).data('href');
-			this.getView('#menu').setData({selected: item});
-			Esencia.componentsManager.load(item);
+			var href = this.$(event.currentTarget).data('href');
+			Esencia.componentsManager.load(href);
 		}
 	});
 });

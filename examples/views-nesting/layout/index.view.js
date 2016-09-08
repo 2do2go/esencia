@@ -11,14 +11,17 @@ define([
 		viewEvents: {
 			'click #menu': 'onMenuClick'
 		},
-		setData: function() {
-			this.getView('#menu').setData({
-				selected: Esencia.history.fragment.match(/[^\?\/]+/)[0]
+		modifyViewsState: function(state) {
+			this.getView('#menu').modifyState({
+				data: {
+					selected: state.data.fragment.match(/[^\?\/]+/)[0]
+				}
 			});
 		},
 		onMenuClick: function(event) {
 			event.preventDefault();
-			Esencia.history.navigate(this.$(event.currentTarget).attr('href'), true);
+			var href = this.$(event.currentTarget).attr('href');
+			Esencia.history.navigate(href, true);
 		}
 	});
 });

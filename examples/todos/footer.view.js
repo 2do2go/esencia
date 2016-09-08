@@ -8,5 +8,9 @@ define(['common/base.view'], function(BaseView) {
 		}
 	};
 
+	View.getTemplateData = function() {
+		return this.data;
+	};
+
 	return BaseView.extend(View);
 });

@@ -13,7 +13,7 @@ require([
 		View: LayoutView
 	});
 
-	router.route('first/:test/asd', {
+	router.route('first', {
 		component: {
 			parent: 'layout',
 			container: '#first',
@@ -30,6 +30,6 @@ require([
 	});
 
 	if (!Esencia.history.start({pushState: false})) {
-		router.navigate('first/asdsad/asd?b=2', {replace: true, trigger: true});
+		router.navigate('first', {replace: true, trigger: true});
 	}
 });
