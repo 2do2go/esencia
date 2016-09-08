@@ -376,6 +376,7 @@
                     autoloadModules: true,
                     modulesPath: 'modules/',
                     defaultModuleName: 'main',
+                    require: window.require,
                     onModuleError: function () {
                     }
                 };
@@ -385,6 +386,7 @@
                     'autoloadModules',
                     'modulesPath',
                     'defaultModuleName',
+                    'require',
                     'onModuleError'
                 ];
             Router.constructor = function (options) {
@@ -463,7 +465,7 @@
                 var self = this;
                 fragment = fragment || backbone.history.fragment;
                 var moduleName = this.getModuleName(fragment);
-                require([this.modulesPath + moduleName], function (moduleInit) {
+                this.require([this.modulesPath + moduleName], function (moduleInit) {
                     if (!self.modules[moduleName]) {
                         moduleInit(self);
                         self.modules[moduleName] = true;
