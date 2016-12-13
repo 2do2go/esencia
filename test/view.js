@@ -12,7 +12,7 @@ define([
 				var view = new View();
 
 				expect(view).to.contain.keys('el', '$el');
-				expect(view._nestedEventsHash).to.be.eql({
+				expect(view._entityEvents).to.be.eql({
 					views: {},
 					collections: {},
 					models: {}
@@ -29,21 +29,23 @@ define([
 			});
 
 			it('should set additional fields from options', function() {
-				var options = {
+				var view = new View({
 					models: {model: 1},
 					collections: {col: 1},
 					views: {'#view': new View()},
 					data: {a: 1},
 					events: {b: 'method'},
 					templateHelpers: {c: 3},
-					router: {d: 4}
-				};
-
-				var view = new View(options);
-
-				_(options).each(function(value, key) {
-					expect(view[key]).to.be.eql(value);
+					componentsManager: {d: 4}
 				});
+
+				expect(view.models).to.have.property('model', 1);
+				expect(view.collections).to.have.property('col', 1);
+				expect(view.views).to.have.property('#view');
+				expect(view.data).to.have.property('a', 1);
+				expect(view.events).to.have.property('b', 'method');
+				expect(view.templateHelpers).to.have.property('c', 3);
+				expect(view.componentsManager).to.have.property('d', 4);
 			});
 
 			it('should set additional fields from prototype', function() {
@@ -80,36 +82,34 @@ define([
 				});
 			});
 
-			it('should fill _nestedEventsHash from events', function() {
+			it('should fill _entityEvents from events', function() {
 				var view = new (View.extend({
-					events: {
-						views: {
-							'change #view1': function() {},
-							'add #view1, #view2': 'viewMethod',
-							'remove #view3': 'wrongMethod'
-						},
-						collections: {
-							'change col1': function() {},
-							'add col1, col2': 'colMethod',
-							'remove col3': 'wrongMethod'
-						},
-						models: {
-							'change model1': function() {},
-							'add model1, model2': 'modelMethod',
-							'remove model3': 'wrongMethod'
-						}
+					viewEvents: {
+						'change #view1': function() {},
+						'add #view1, #view2': 'viewMethod',
+						'remove #view3': 'wrongMethod'
+					},
+					collectionEvents: {
+						'change col1': function() {},
+						'add col1, col2': 'colMethod',
+						'remove col3': 'wrongMethod'
+					},
+					modelEvents: {
+						'change model1': function() {},
+						'add model1, model2': 'modelMethod',
+						'remove model3': 'wrongMethod'
 					},
 					viewMethod: function() {},
 					colMethod: function() {},
 					modelMethod: function() {}
 				}))();
 
-				expect(view._nestedEventsHash).to.be.an('object');
-				expect(view._nestedEventsHash.views).to.be.an('object');
-				expect(view._nestedEventsHash.collections).to.be.an('object');
-				expect(view._nestedEventsHash.models).to.be.an('object');
+				expect(view._entityEvents).to.be.an('object');
+				expect(view._entityEvents.views).to.be.an('object');
+				expect(view._entityEvents.collections).to.be.an('object');
+				expect(view._entityEvents.models).to.be.an('object');
 
-				var nestedEventsHash = {
+				var nestedEvents = {
 					views: {
 						'#view1': ['change', 'add'],
 						'#view2': ['add']
@@ -124,25 +124,25 @@ define([
 					}
 				};
 
-				_(nestedEventsHash).each(function(typeEvents, type) {
-					_(typeEvents).each(function(eventNames, entityName) {
-						expect(view._nestedEventsHash[type]).to.have.property(entityName);
-						expect(view._nestedEventsHash[type][entityName]).to.be.an('array');
-						expect(view._nestedEventsHash[type][entityName]).to.have
+				_(nestedEvents).each(function(events, entityType) {
+					_(events).each(function(eventNames, entityName) {
+						expect(view._entityEvents[entityType]).to.have.property(entityName);
+						expect(view._entityEvents[entityType][entityName]).to.be.an('array');
+						expect(view._entityEvents[entityType][entityName]).to.have
 							.lengthOf(eventNames.length);
 
 						_(eventNames).each(function(eventName, index) {
-							var eventItem = view._nestedEventsHash[type][entityName][index];
+							var eventItem = view._entityEvents[entityType][entityName][index];
 							expect(eventItem).to.be.an('object');
-							expect(eventItem.eventName).to.be.equal(eventName);
-							expect(eventItem.handler).to.be.a('function');
+							expect(eventItem.name).to.be.equal(eventName);
+							expect(eventItem.listener).to.be.a('function');
 						});
 					});
 				});
 
-				expect(view._nestedEventsHash.views).to.not.have.property('#view3');
-				expect(view._nestedEventsHash.collections).to.not.have.property('#col3');
-				expect(view._nestedEventsHash.models).to.not.have.property('#model3');
+				expect(view._entityEvents.views).to.not.have.property('#view3');
+				expect(view._entityEvents.collections).to.not.have.property('#col3');
+				expect(view._entityEvents.models).to.not.have.property('#model3');
 			});
 		});
 
@@ -222,7 +222,7 @@ define([
 			});
 		});
 
-		describe('.insertView()', function() {
+		describe('.addView()', function() {
 			it('should insert view at the index', function() {
 				var view = new View({
 					views: {
@@ -232,7 +232,7 @@ define([
 
 				var nestedView = new View();
 
-				view.insertView(nestedView, '#selector', 1);
+				view.addView(nestedView, '#selector', {at: 1});
 
 				expect(view.views['#selector']).to.be.an('array');
 				expect(view.views['#selector']).to.have.lengthOf(3);
@@ -248,7 +248,7 @@ define([
 
 				var nestedView = new View();
 
-				view.insertView(nestedView, '#selector');
+				view.addView(nestedView, '#selector');
 
 				expect(view.views['#selector']).to.be.an('array');
 				expect(view.views['#selector']).to.have.lengthOf(3);
@@ -256,7 +256,7 @@ define([
 			});
 		});
 
-		describe('.insertViews()', function() {
+		describe('.addViews()', function() {
 			it('should insert views array at the index', function() {
 				var view = new View({
 					views: {
@@ -267,7 +267,7 @@ define([
 				var nestedView1 = new View();
 				var nestedView2 = new View();
 
-				view.insertViews([nestedView1, nestedView2], '#selector', 1);
+				view.addViews([nestedView1, nestedView2], '#selector', {at: 1});
 
 				expect(view.views['#selector']).to.be.an('array');
 				expect(view.views['#selector']).to.have.lengthOf(4);
@@ -285,7 +285,7 @@ define([
 				var nestedView1 = new View();
 				var nestedView2 = new View();
 
-				view.insertViews([nestedView1, nestedView2], '#selector');
+				view.addViews([nestedView1, nestedView2], '#selector');
 
 				expect(view.views['#selector']).to.be.an('array');
 				expect(view.views['#selector']).to.have.lengthOf(4);
@@ -318,7 +318,7 @@ define([
 				});
 
 				var nestedView = new View();
-				view.setView(nestedView, '#selector', 1);
+				view.setView(nestedView, '#selector', {at: 1});
 
 				expect(view.views['#selector']).to.be.an('array');
 				expect(view.views['#selector']).to.have.lengthOf(2);
@@ -353,7 +353,7 @@ define([
 
 				var nestedView1 = new View();
 				var nestedView2 = new View();
-				view.setViews([nestedView1, nestedView2], '#selector', 1);
+				view.setViews([nestedView1, nestedView2], '#selector', {at: 1});
 
 				expect(view.views['#selector']).to.be.an('array');
 				expect(view.views['#selector']).to.have.lengthOf(3);

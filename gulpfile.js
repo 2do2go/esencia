@@ -67,7 +67,7 @@ gulp.task('lint', function() {
 	return gulp
 		.src('**/*.js')
 		.pipe(jshint())
-		.pipe(jshint.reporter('default'));
+		.pipe(jshint.reporter('jshint-stylish'));
 });
 
 gulp.task('clean', function() {
@@ -97,7 +97,7 @@ gulp.task('build:bundle', function() {
 gulp.task('build', ['build:bundle']);
 
 gulp.task('watch', function() {
-	return gulp.watch(SRC + '*.js', ['build']);
+	return gulp.watch(SRC + '**/*.js', ['build']);
 });
 
-gulp.task('dev', gulpSequence('clean', 'build', 'watch'));
+gulp.task('default', gulpSequence('clean', 'build', 'watch'));

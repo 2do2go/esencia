@@ -1,5 +1,5 @@
 {
-    "node": true,
+    "browser": true,
     "freeze": true,
     "maxlen": 80,
     "smarttabs": true,
@@ -14,5 +14,9 @@
     "unused": true,
     "immed": true,
     "eqeqeq": true,
-    "forin": true
+    "forin": true,
+    "globals": {
+        "define": false,
+        "require": false
+    }
 }

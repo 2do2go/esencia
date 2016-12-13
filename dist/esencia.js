@@ -27,9 +27,9 @@
     _require.modules = [
         function (module, exports) {
             'use strict';
-            var _ = _require(8);
-            var backbone = _require(7);
-            var execUtils = _require(5);
+            var _ = _require(11);
+            var backbone = _require(10);
+            var execUtils = _require(8);
             var Collection = {};
             Collection.sync = function (method, collection, options) {
                 options = execUtils.prepareOptions(method, collection, options);
@@ -54,89 +54,178 @@
         },
         function (module, exports) {
             'use strict';
-            var _ = _require(8);
-            var backbone = _require(7);
-            var View = _require(6);
+            var View = _require(5);
+            var _ = _require(11);
+            var CollectionView = {};
+            var collectionEvents = {
+                    add: '_onCollectionAdd',
+                    change: '_onCollectionChange',
+                    remove: '_onCollectionRemove'
+                };
+            CollectionView._prepareViews = function () {
+                View.prototype._prepareViews.call(this);
+                var self = this;
+                this.views[this.itemsContainer] = this.collection.map(function (model) {
+                    return new self.ItemView({ model: model });
+                });
+            };
+            CollectionView._prepareEntityEvents = function () {
+                View.prototype._prepareEntityEvents.call(this);
+                this._addEntityEvents('collections', collectionEvents);
+            };
+            CollectionView._onCollectionAdd = function (model) {
+                var index = _.indexOf(this.collection.models, model);
+                this.addView(new this.ItemView({ model: model }), this.itemsContainer, { at: index });
+                this.render({ include: this.itemsContainer });
+            };
+            CollectionView._onCollectionChange = function (model) {
+                var index = _.indexOf(this.collection.models, model);
+                var view = this.getView(this.itemsContainer, index);
+                view.render();
+            };
+            CollectionView._onCollectionRemove = function (model, collection, options) {
+                var view = this.getView(this.itemsContainer, options.index);
+                view.remove();
+            };
+            module.exports = View.extend(CollectionView);
+        },
+        function (module, exports) {
+            'use strict';
+            var _ = _require(11);
+            var backbone = _require(10);
+            var View = _require(5);
+            var extend = _require(9);
             function isTreeNodeChanged(oldNode, node) {
-                return Boolean(!oldNode || oldNode.component.name !== node.component.name || !oldNode.view || oldNode.view instanceof node.component.View === false || oldNode.view.isWaiting() || !oldNode.view.attached || !oldNode.view.isUnchanged());
+                return Boolean(!oldNode || oldNode.component.name !== node.component.name || !oldNode.view || oldNode.view instanceof node.component.View === false || oldNode.view.isWaiting() || !oldNode.view.attached || oldNode.view.loadState());
             }
             var ComponentsManager = function (options) {
+                options = options || {};
                 _.extend(this, _.pick(options, componentManagerOptions));
                 this.options = options;
                 this.components = {};
                 this.tree = [];
+                this.currentNames = [];
+                if (this.autoAddRoot)
+                    this._addRoot();
                 this.initialize.apply(this, arguments);
             };
             var componentManagerOptions = [
-                    'rootComponentEl',
-                    'viewOptions'
+                    'rootEl',
+                    'autoAddRoot'
                 ];
             var componentOptions = [
                     'name',
                     'parent',
                     'container',
                     'View',
+                    'model',
                     'models',
+                    'collection',
                     'collections',
                     'viewOptions'
                 ];
             _.extend(ComponentsManager.prototype, backbone.Events, {
-                rootComponentEl: 'html',
+                rootEl: 'html',
+                autoAddRoot: true,
+                defaultParent: undefined,
                 initialize: function () {
                 },
-                addRootComponent: function () {
-                    var RootView = View.extend({ el: this.rootComponentEl });
+                _addRoot: function () {
+                    var RootView = View.extend({ el: this.rootEl });
                     this.add({
-                        name: '',
                         parent: null,
                         View: RootView
                     });
                 },
                 add: function (options) {
-                    options = _({}).defaults(options, {
-                        parent: '',
-                        process: false
+                    options = _.defaults({}, options, {
+                        parent: this.defaultParent,
+                        load: false
                     });
-                    var component = _(options).pick(componentOptions);
-                    if (_.isUndefined(component.name)) {
-                        component.name = _.uniqueId('auto-named-component');
-                    }
-                    if (!_.isString(component.name)) {
+                    var component = _.pick(options, componentOptions);
+                    var hasName = _.has(component, 'name');
+                    var hasContainer = _.has(component, 'container');
+                    var hasParent = _.isString(component.parent);
+                    var isRoot = _.isNull(component.parent);
+                    var hasDefaultParent = _.isString(this.defaultParent);
+                    if (hasName && !_.isString(component.name)) {
                         throw new Error('Component `name` option should be a string');
                     }
-                    if (component.name in this.components) {
+                    if (hasName && _.has(this.components, component.name)) {
                         throw new Error('Duplicate component with name "' + component.name + '"');
                     }
-                    if (!component.View) {
+                    if (!_.has(component, 'View')) {
                         throw new Error('Component `View` option is required');
                     }
-                    if (!_.isString(component.parent) && !_.isNull(component.parent)) {
+                    if (!hasDefaultParent && _.isUndefined(component.parent)) {
+                        throw new Error('Default root component is not set, add root component first');
+                    }
+                    if (!hasParent && !isRoot) {
                         throw new Error('Component `parent` option should be a string or null');
                     }
+                    if (isRoot && hasContainer) {
+                        throw new Error('Root component could not have a container');
+                    }
+                    if (hasParent && !hasContainer) {
+                        throw new Error('Component `container` option is required for components with parent');
+                    }
+                    if (hasContainer && !_.isString(component.container)) {
+                        throw new Error('Component `container` option should be a string selector');
+                    }
+                    if (!hasName) {
+                        component.name = _.uniqueId('__COMPONENT_') + '__';
+                    }
                     this.components[component.name] = component;
-                    if (options.process) {
-                        this.process(component.name);
+                    if (isRoot && (!hasDefaultParent || options.default)) {
+                        this.defaultParent = component.name;
+                    }
+                    if (options.load) {
+                        this.load(component.name);
                     }
                     return component;
                 },
                 get: function (name) {
-                    return this.components[name] || null;
+                    var component = this.components[name];
+                    if (!component) {
+                        throw new Error('Component with name "' + name + '" does not exist');
+                    }
+                    return component;
                 },
                 remove: function (name) {
                     delete this.components[name];
                 },
-                process: function (names, callback) {
+                load: function (names, options, callback) {
+                    if (_.isFunction(names)) {
+                        callback = names;
+                        names = undefined;
+                        options = undefined;
+                    }
+                    if (_.isFunction(options)) {
+                        callback = options;
+                        if (_.isArray(names) || _.isString(names)) {
+                            options = undefined;
+                        } else {
+                            options = names;
+                            names = undefined;
+                        }
+                    }
+                    names = names || this.currentNames;
+                    options = options || {};
+                    callback = callback || _.noop;
                     if (!_.isArray(names))
                         names = [names];
-                    callback = callback || _.noop;
-                    var tree = this._buildTree(names);
-                    var oldTree = this.tree;
+                    if (!names.length) {
+                        throw new Error('Component name or names to load should be set');
+                    }
+                    var treeNodes = this._buildTree(names);
+                    var oldTreeNodes = this.tree;
                     this.tree = [];
+                    this.currentNames = names;
                     this._applyTree({
                         parent: { children: this.tree },
-                        oldTree: oldTree,
-                        tree: tree
-                    }, callback);
+                        oldNodes: oldTreeNodes,
+                        nodes: treeNodes
+                    }, options, callback);
                 },
                 _buildTree: function (names) {
                     var self = this;
@@ -145,11 +234,8 @@
                             return tree;
                         var parentNames = [];
                         var nodes = _(names).chain().uniq().map(function (name) {
-                                var component = self.components[name];
-                                if (!component) {
-                                    throw new Error('Unknown component with name "' + name + '"');
-                                }
-                                if (_(tree).has(component.name))
+                                var component = self.get(name);
+                                if (_.has(tree, component.name))
                                     return null;
                                 var node = {
                                         component: component,
@@ -191,15 +277,14 @@
                     }
                     return tree;
                 },
-                _applyTree: function (params, callback) {
+                _applyTree: function (treeParams, options, callback) {
                     var self = this;
-                    var parent = params.parent;
-                    var afterCallback = _.after(params.tree.length, callback);
+                    var parent = treeParams.parent;
+                    var afterCallback = _.after(treeParams.nodes.length, callback);
                     var iterate = function (oldNode, node) {
                         var container = node.component.container;
                         var children = node.children;
                         var oldChildren = oldNode ? oldNode.children : [];
-                        node.view.setData();
                         if (!node.view.attached && container) {
                             parent.view.setView(node.view, container).renderViews({ include: [container] }).attachViews({ include: [container] });
                         } else {
@@ -214,12 +299,12 @@
                         parent.children.push(node);
                         self._applyTree({
                             parent: node,
-                            oldTree: oldChildren,
-                            tree: children
-                        }, afterCallback);
+                            oldNodes: oldChildren,
+                            nodes: children
+                        }, options, afterCallback);
                     };
-                    _(params.tree).each(function (node, index) {
-                        var oldNode = params.oldTree[index] || null;
+                    _(treeParams.nodes).each(function (node, index) {
+                        var oldNode = treeParams.oldNodes[index] || null;
                         if (isTreeNodeChanged(oldNode, node)) {
                             if (oldNode && oldNode.view) {
                                 if (oldNode.component.container) {
@@ -230,9 +315,9 @@
                                     oldNode.view.detach();
                                 }
                             }
-                            node.view = new node.component.View(_(node.component).chain().pick('models', 'collections').extendOwn(_(node.component).result('viewOptions'), self.viewOptions).value());
+                            node.view = new node.component.View(_(node.component).chain().pick('model', 'models', 'collection', 'collections').extend(_.result(node.component, 'viewOptions'), { componentsManager: self }, options.viewOptions).value());
                             if (node.view.isWaiting()) {
-                                self.listenToOnce(node.view, 'resolve', function () {
+                                self.listenToOnce(node.view, 'esencia:resolve', function () {
                                     iterate(null, node);
                                 });
                             } else {
@@ -240,32 +325,20 @@
                             }
                         } else {
                             node.view = oldNode.view;
+                            node.view.modifyState(options.viewOptions);
                             iterate(oldNode, node);
                         }
                     });
                 }
             });
-            ComponentsManager.extend = View.extend;
+            ComponentsManager.extend = extend;
             module.exports = ComponentsManager;
         },
         function (module, exports) {
             'use strict';
-            var Router = _require(4);
-            var Collection = _require(0);
-            var Model = _require(3);
-            var View = _require(6);
-            var ComponentsManager = _require(1);
-            module.exports.Router = Router;
-            module.exports.Collection = Collection;
-            module.exports.Model = Model;
-            module.exports.View = View;
-            module.exports.ComponentsManager = ComponentsManager;
-        },
-        function (module, exports) {
-            'use strict';
-            var _ = _require(8);
-            var backbone = _require(7);
-            var execUtils = _require(5);
+            var _ = _require(11);
+            var backbone = _require(10);
+            var execUtils = _require(8);
             var Model = {};
             Model.sync = function (method, model, options) {
                 options = execUtils.prepareOptions(method, model, options);
@@ -293,212 +366,130 @@
         },
         function (module, exports) {
             'use strict';
-            var _ = _require(8);
-            var backbone = _require(7);
-            var ComponentsManager = _require(1);
+            var _ = _require(11);
+            var backbone = _require(10);
+            var componentsManager = _require(7);
+            var namesPattern = /[\:\*]([^\:\?\/]+)/g;
             var Router = {
-                    root: '/',
-                    pushState: false,
-                    namedParameters: false,
-                    nowhereUrl: '___',
-                    config: {},
+                    componentsManager: componentsManager,
+                    namedParameters: true,
                     autoloadModules: true,
                     modulesPath: 'modules/',
                     defaultModuleName: 'main',
+                    require: window.require,
                     onModuleError: function () {
                     }
                 };
             var routerOptions = [
-                    'root',
-                    'pushState',
+                    'componentsManager',
                     'namedParameters',
-                    'nowhereUrl',
-                    'config',
                     'autoloadModules',
                     'modulesPath',
                     'defaultModuleName',
+                    'require',
                     'onModuleError'
                 ];
             Router.constructor = function (options) {
                 options = options || {};
                 _.extend(this, _.pick(options, routerOptions));
                 this.options = options;
-                this.componentsManager = new ComponentsManager(_.extend({}, options, { viewOptions: { router: this } }));
-                this.urlParams = {};
                 this.modules = {};
-                this.history = backbone.history;
-                backbone.Router.namedParameters = this.namedParameters;
                 backbone.Router.apply(this, arguments);
-                if (options.autoloadModules) {
-                    this.route('*url', function (params) {
-                        this.setModule(params);
-                    });
-                }
-            };
-            Router._populateUrlParams = function () {
-                var self = this;
-                var key;
-                for (key in this.urlParams) {
-                    if (_(this.urlParams).has(key)) {
-                        delete this.urlParams[key];
-                    }
-                }
-                _(arguments).chain().filter(_.isObject).each(function (params) {
-                    params = _.isFunction(params) ? params.call(self) : params;
-                    _.extendOwn(self.urlParams, params);
-                });
-                return this.urlParams;
             };
             Router.component = function (options) {
+                return this.componentsManager.add(options);
+            };
+            Router.route = function (route, options, callback) {
                 var self = this;
-                var component = this.componentsManager.add(options);
-                if (!_.isUndefined(options.url)) {
-                    this.route(options.url, component.name, function (params) {
-                        self._populateUrlParams(options.defaultUrlParams, params);
-                        self.componentsManager.process(component.name);
-                    });
+                if (_.isFunction(options)) {
+                    callback = options;
+                    options = {};
                 }
-            };
-            Router.route = function (url, name, callback) {
-                var router = this;
-                if (_.isFunction(name)) {
-                    callback = name;
-                    name = '';
+                if (!_.isObject(options)) {
+                    options = { name: options };
                 }
-                backbone.Router.prototype.route.call(this, url, name, function () {
-                    var args = arguments;
-                    router._defaultMiddleware({
-                        url: url,
-                        name: name,
-                        callback: callback
-                    }, function () {
-                        callback.apply(router, args);
-                    });
-                });
-            };
-            Router.navigate = function (fragment, options) {
-                options = options || {};
-                if (fragment.indexOf(this.root) === 0) {
-                    fragment = fragment.substring(this.root.length);
-                }
-                if (options.force) {
-                    this.navigate(this.nowhereUrl, {
-                        replace: options.replace,
-                        trigger: false
-                    });
-                    options = _(options).chain().omit('force').extend({ replace: true }).value();
-                    return this.navigate(fragment, options);
-                }
-                options = _(options || {}).defaults({
-                    trigger: true,
-                    params: {}
-                });
-                var qs = options.qs;
-                if (this.toFragment && qs) {
-                    _(qs).each(function (val, key, qs) {
-                        if (val === undefined || val === null)
-                            delete qs[key];
-                    });
-                    fragment = this.toFragment(fragment, qs);
-                    delete options.qs;
-                }
-                backbone.Router.prototype.navigate.call(this, fragment, options);
-            };
-            Router._defaultMiddleware = function (route, next) {
-                next();
-            };
-            Router.middleware = function (middleware) {
-                var router = this;
-                var defaultMiddleware = this._defaultMiddleware;
-                this._defaultMiddleware = function (route, next) {
-                    defaultMiddleware.call(router, route, function () {
-                        middleware.call(router, route, next);
-                    });
-                };
-                return this;
-            };
-            Router.setModule = function (params) {
-                var router = this;
-                var url = params.url;
-                delete params.url;
-                var moduleName = _(url.split('/')).find(_.identity) || this.defaultModuleName;
-                require([this.modulesPath + moduleName], function (moduleInit) {
-                    if (!router.modules[moduleName]) {
-                        moduleInit(router);
-                        router.modules[moduleName] = true;
-                        router.navigate(url, {
-                            replace: true,
-                            force: true,
-                            qs: params
+                var name = '';
+                if (_.has(options, 'components') || _.has(options, 'component')) {
+                    var components = _(options.components || [options.component]).map(function (componentOptions) {
+                            if (_.isString(componentOptions)) {
+                                return self.componentsManager.get(componentOptions);
+                            } else {
+                                return self.component(componentOptions);
+                            }
                         });
+                    var componentNames = _.pluck(components, 'name');
+                    name = componentNames.join(',');
+                    callback = function () {
+                        var viewOptions = {
+                                data: {
+                                    fragment: backbone.history.fragment,
+                                    params: self.namedParameters ? _.first(arguments) : _.initial(arguments),
+                                    query: _.last(arguments)
+                                }
+                            };
+                        self.componentsManager.load(componentNames, { viewOptions: viewOptions });
+                    };
+                }
+                name = options.name || name;
+                backbone.Router.prototype.route.call(this, route, name, callback);
+            };
+            Router._routeToRegExp = function (route) {
+                var paramNames = route.match(namesPattern) || [];
+                route = backbone.Router.prototype._routeToRegExp.call(this, route);
+                route.paramNames = _(paramNames).map(function (name) {
+                    return name.replace(/\)$/, '').substring(1);
+                });
+                return route;
+            };
+            Router._extractParameters = function (route, fragment) {
+                var params = backbone.Router.prototype._extractParameters.call(this, route, fragment);
+                if (!this.namedParameters || !route.paramNames)
+                    return params;
+                var namedParams = {};
+                var paramsLength = params.length;
+                _(route.paramNames).find(function (name, index) {
+                    if (_.isString(params[index]) && index < paramsLength - 1) {
+                        namedParams[name] = params[index];
+                        return false;
+                    } else {
+                        return true;
+                    }
+                });
+                var qs = params[paramsLength - 1];
+                return [
+                    namedParams,
+                    qs
+                ];
+            };
+            Router.loadModule = function (fragment) {
+                var self = this;
+                fragment = fragment || backbone.history.fragment;
+                var moduleName = this.getModuleName(fragment);
+                this.require([this.modulesPath + moduleName], function (moduleInit) {
+                    if (!self.modules[moduleName]) {
+                        moduleInit(self);
+                        self.modules[moduleName] = true;
+                        backbone.history.loadUrl(fragment);
                     }
                 }, this.onModuleError);
             };
-            Router.start = function () {
-                this.componentsManager.addRootComponent();
-                backbone.history.start({
-                    pushState: this.pushState,
-                    root: this.root
-                });
+            Router.getModuleName = function (fragment) {
+                return _(fragment.split('/')).find(_.identity) || this.defaultModuleName;
             };
             module.exports = backbone.Router.extend(Router);
         },
         function (module, exports) {
             'use strict';
-            var _ = _require(8);
-            var DEFAULT_EXEC_TYPE = 'PUT';
-            var urlError = function () {
-                throw new Error('A "url" property or function must be specified');
-            };
-            module.exports.wrapError = function (model, options) {
-                var error = options.error;
-                options.error = function (resp) {
-                    if (error)
-                        error.call(options.context, model, resp, options);
-                    model.trigger('error', model, resp, options);
-                };
-            };
-            module.exports.prepareOptions = function (method, model, options) {
-                options = _({
-                    type: DEFAULT_EXEC_TYPE,
-                    dataType: 'json',
-                    contentType: 'application/json',
-                    processData: false
-                }).extend(options);
-                if (!options.url) {
-                    var url = _.result(model, 'url') || urlError();
-                    options.url = url.replace(/[^\/]$/, '$&/') + method;
-                }
-                if (options.data && _.isObject(options.data) && !options.processData) {
-                    options.data = JSON.stringify(options.data);
-                }
-                return options;
-            };
-            var baseMethodsMap = {
-                    'POST': 'create',
-                    'PUT': 'update',
-                    'PATCH': 'patch',
-                    'DELETE': 'delete',
-                    'GET': 'read'
-                };
-            module.exports.getFakeBaseMethod = function (options) {
-                return baseMethodsMap[options.type.toUpperCase()];
-            };
-        },
-        function (module, exports) {
-            'use strict';
-            var _ = _require(8);
-            var backbone = _require(7);
+            var _ = _require(11);
+            var backbone = _require(10);
             var $ = backbone.$;
             var splice = Array.prototype.splice;
             var delegateEventSplitter = /^(\S+)\s*(.*)$/;
-            var nestedEventTypes = [
-                    'views',
-                    'collections',
-                    'models'
-                ];
+            var entityNamesSplitter = /\s*,\s*/g;
             function isContainerSkipped(container, options) {
-                return Boolean(options.exclude && _(options.exclude).contains(container) || options.include && !_(options.include).contains(container));
+                var exclude = options.exclude;
+                var include = options.include;
+                return Boolean(exclude && _.contains(_.isArray(exclude) ? exclude : [exclude], container) || include && !_.contains(_.isArray(include) ? include : [include], container));
             }
             var View = {
                     templateHelpers: {},
@@ -506,52 +497,137 @@
                     waitAvailable: true,
                     attached: false
                 };
-            var viewOptions = [
-                    'views',
-                    'collections',
+            var entityTypes = [
                     'models',
-                    'data',
-                    'events',
-                    'router',
-                    'templateHelpers'
+                    'collections',
+                    'views'
                 ];
+            var entityEventTypes = [
+                    'modelEvents',
+                    'collectionEvents',
+                    'viewEvents'
+                ];
+            var additionalViewOptions = [
+                    'componentsManager',
+                    'template',
+                    'templateHelpers',
+                    'ui',
+                    'triggers'
+                ];
+            var stateOptions = [
+                    'data',
+                    'models',
+                    'collections',
+                    'model',
+                    'collection'
+                ];
+            var viewOptions = _.union(entityTypes, entityEventTypes, additionalViewOptions, stateOptions);
             View.constructor = function (options) {
                 var self = this;
                 options = options || {};
-                this.views = {};
-                this.collections = {};
-                this.models = {};
-                this.data = {};
                 _.extend(this, _.pick(options, viewOptions));
                 this.options = options;
-                if (this.template && !_.isFunction(this.template)) {
-                    throw new Error('View `template` option should be a function');
-                }
-                this._prepareEvents();
+                this.data = _.result(this, 'data', {});
+                this.templateData = {};
+                this._prepareEntityEvents();
+                this._prepareModels();
+                this._prepareCollections();
                 this._prepareViews();
-                backbone.View.apply(this, arguments);
+                _(this.views).each(function (views, container) {
+                    self.delegateEntityEvents('views', container, views);
+                });
+                backbone.View.call(this, _.omit(options, 'model', 'collection'));
+                this.modifyViewsState(options);
                 _(this.views).each(function (views) {
                     _(views).each(function (view) {
                         if (view.isWaiting()) {
-                            self.listenToOnce(view, 'resolve', self.wait());
+                            self.listenToOnce(view, 'esencia:resolve', self.wait());
                         }
                     });
                 });
                 this.waitAvailable = false;
-                _(this.collections).each(function (collection, key) {
-                    self.delegateNestedEvents('collections', key, collection);
+                _(this.collections).each(function (collection, name) {
+                    self.delegateEntityEvents('collections', name, collection);
                 });
-                _(this.models).each(function (model, key) {
-                    self.delegateNestedEvents('models', key, model);
+                if (this.collection) {
+                    this.delegateEntityEvents('collections', '', this.collection);
+                }
+                _(this.models).each(function (model, name) {
+                    self.delegateEntityEvents('models', name, model);
                 });
+                if (this.model) {
+                    this.delegateEntityEvents('models', '', this.model);
+                }
             };
-            View.setData = function (data) {
-                if (data)
-                    this.data = data;
+            View.modifyState = function (state, options) {
+                state = state || {};
+                options = options || {};
+                var self = this;
+                _(stateOptions).each(function (stateOption) {
+                    if (!_.has(state, stateOption))
+                        return;
+                    var targetObj, stateObj, objKeys;
+                    if (_.contains([
+                            'data',
+                            'models',
+                            'collections'
+                        ], stateOption)) {
+                        stateObj = state[stateOption];
+                        if (!_.isObject(stateObj)) {
+                            throw new Error('State property `' + stateOption + '` should be an object');
+                        }
+                        targetObj = self[stateOption];
+                        objKeys = _.keys(stateObj);
+                    } else {
+                        targetObj = self;
+                        stateObj = state;
+                        objKeys = [stateOption];
+                    }
+                    _(objKeys).each(function (objKey) {
+                        if (_.has(targetObj, objKey) && _.contains([
+                                'models',
+                                'collections',
+                                'model',
+                                'collection'
+                            ], stateOption)) {
+                            self.undelegateEntityEvents(targetObj[objKey]);
+                        }
+                        targetObj[objKey] = stateObj[objKey];
+                        if (_.contains([
+                                'models',
+                                'collections'
+                            ], stateOption)) {
+                            self.delegateEntityEvents(stateOption, objKey, stateObj[objKey]);
+                        }
+                        if (_.contains([
+                                'model',
+                                'collection'
+                            ], stateOption)) {
+                            self.delegateEntityEvents(stateOption + 's', '', stateObj[objKey]);
+                        }
+                    });
+                });
+                this.modifyViewsState(state, options);
+                if (options.load) {
+                    this.loadState();
+                }
                 return this;
             };
-            View.isUnchanged = function () {
-                return true;
+            View.loadState = function () {
+                var stateChanged = false;
+                if (this.template) {
+                    var templateData = this.getTemplateData();
+                    stateChanged = !this.isStatesEqual(this.templateData, templateData);
+                    if (stateChanged)
+                        this.templateData = templateData;
+                }
+                return stateChanged;
+            };
+            View.modifyViewsState = function () {
+                return this;
+            };
+            View.isStatesEqual = function (oldState, newState) {
+                return _.isEqual(oldState, newState);
             };
             View.wait = function () {
                 if (!this.waitAvailable) {
@@ -559,11 +635,12 @@
                 }
                 var self = this;
                 this.waitsCounter++;
+                this.trigger('esencia:wait');
                 return _.once(function () {
                     _.defer(function () {
                         self.waitsCounter--;
                         if (!self.isWaiting()) {
-                            self.trigger('resolve');
+                            self.trigger('esencia:resolve');
                         }
                     });
                 });
@@ -576,9 +653,14 @@
                     return this;
                 options = options || {};
                 if (this.template) {
-                    if (options.force || !this.attached || !this.isUnchanged()) {
+                    var stateChanged = this.loadState();
+                    if (options.force || !this.attached || stateChanged) {
                         this.detach();
-                        var html = this.renderTemplate(this.template, this.getTemplateData());
+                        var locals = _(this).chain().result('templateHelpers').extend(this.templateData).value();
+                        var html = this.renderTemplate(this.template, locals);
+                        if (!_.isString(html)) {
+                            throw new Error('`renderTemplate` method should return a HTML string');
+                        }
                         var $el = $(html);
                         if (!$el.length) {
                             throw new Error('View template produces empty html');
@@ -592,9 +674,11 @@
                     if (!this.$el.length)
                         this._ensureElement();
                 }
+                this.trigger('esencia:render');
                 this.renderViews(options);
                 if (!this.parent || this.$container) {
-                    this.attach(options);
+                    this.attachViews(options);
+                    this.attach();
                 }
                 return this;
             };
@@ -602,11 +686,13 @@
                 return this._render(options);
             };
             View.getTemplateData = function () {
-                return this.data;
+                return {};
             };
-            View.renderTemplate = function (template, data) {
-                data = _(this).chain().result('templateHelpers').extend(data).value();
-                return template(data);
+            View.renderTemplate = function (template, locals) {
+                if (!_.isFunction(template)) {
+                    throw new Error('View `template` should be a function');
+                }
+                return template(locals);
             };
             View.renderViews = function (options) {
                 var self = this;
@@ -616,7 +702,7 @@
                     if (!viewsGroup.length)
                         return;
                     _(viewsGroup).each(function (view) {
-                        view.render(_(options).omit('include', 'exclude'));
+                        view.render(_.omit(options, 'include', 'exclude'));
                     });
                     var $container = container ? self.$(container).first() : self.$el;
                     if (!$container.length) {
@@ -637,38 +723,42 @@
                 });
                 return this;
             };
-            View.setView = function (view, container, index) {
-                return this._updateViews([view], container, index);
+            View.setView = function (view, container, options) {
+                return this._setViews([view], container, options);
             };
-            View.setViews = function (views, container, index) {
-                return this._updateViews(views, container, index);
+            View.setViews = function (views, container, options) {
+                return this._setViews(views, container, options);
             };
-            View.appendView = function (view, container) {
-                return this._insertViews([view], container);
+            View.appendView = function (view, container, options) {
+                options = _(options || {}).omit('at');
+                return this._addViews([view], container, options);
             };
-            View.appendViews = function (views, container) {
-                return this._insertViews(views, container);
+            View.appendViews = function (views, container, options) {
+                options = _(options || {}).omit('at');
+                return this._addViews(views, container, options);
             };
-            View.prependView = function (view, container) {
-                return this._insertViews([view], container, 0);
+            View.prependView = function (view, container, options) {
+                options = _.extend({}, options, { at: 0 });
+                return this._addViews([view], container, options);
             };
-            View.prependViews = function (views, container) {
-                return this._insertViews(views, container, 0);
+            View.prependViews = function (views, container, options) {
+                options = _.extend({}, options, { at: 0 });
+                return this._addViews(views, container, options);
             };
-            View.insertView = function (view, container, index) {
-                return this._insertViews([view], container, index);
+            View.addView = function (view, container, options) {
+                return this._addViews([view], container, options);
             };
-            View.insertViews = function (views, container, index) {
-                return this._insertViews(views, container, index);
+            View.addViews = function (views, container, options) {
+                return this._addViews(views, container, options);
             };
-            View.removeView = function (view, container, index) {
+            View.removeView = function (view, container, at) {
                 if (arguments.length < 2) {
-                    throw new Error('"view" or "index" arguments must be specified');
+                    throw new Error('"view" or "at" arguments must be specified');
                 }
                 if (_.isString(view)) {
-                    index = container;
+                    at = container;
                     container = view;
-                    view = this.getView(container, index);
+                    view = this.getView(container, at);
                     if (!view)
                         return this;
                 }
@@ -681,45 +771,45 @@
                 }
                 return this._removeViews(views, container);
             };
-            View.getView = function (container, index) {
-                return this.getViews(container)[index || 0] || null;
+            View.getView = function (container, at) {
+                return this.getViews(container)[at || 0] || null;
             };
             View.getViews = function (container) {
                 return _.clone(this.views[container]) || [];
             };
-            View._insertViews = function (views, container, index) {
+            View.getViewsCount = function (container) {
+                return (this.views[container] || []).length;
+            };
+            View._addViews = function (views, container, options) {
                 var self = this;
                 var viewsGroup = this.getViews(container);
+                options = _.defaults({}, options, { at: viewsGroup.length });
                 _(views).each(function (view) {
                     if (view.parent) {
                         view.parent.removeView(view, view.container);
                     }
                 });
-                if (viewsGroup.length) {
-                    if (typeof index === 'undefined') {
-                        index = viewsGroup.length;
-                    }
-                    splice.apply(this.views[container], [
-                        index,
-                        0
-                    ].concat(views));
-                } else {
-                    this.views[container] = views;
-                }
+                if (!this.views[container])
+                    this.views[container] = [];
+                splice.apply(this.views[container], [
+                    options.at,
+                    0
+                ].concat(views));
                 _(views).each(function (view) {
                     view.parent = self;
                     view.container = container;
                 });
-                this.delegateNestedEvents('views', container, views);
+                this.delegateEntityEvents('views', container, views);
                 return this;
             };
-            View._updateViews = function (views, container, index) {
+            View._setViews = function (views, container, options) {
+                options = options || {};
                 var oldViews;
-                if (typeof index === 'undefined') {
-                    oldViews = this.getViews(container);
+                if (_.isNumber(options.at)) {
+                    var oldView = this.getView(container, options.at);
+                    oldViews = oldView ? [oldView] : [];
                 } else {
-                    oldViews = this.getView(container, index);
-                    oldViews = oldViews ? [oldViews] : [];
+                    oldViews = this.getViews(container);
                 }
                 if (oldViews.length === views.length && _(oldViews).all(function (oldView, index) {
                         return oldView === views[index];
@@ -731,7 +821,7 @@
                         view.remove();
                     });
                 }
-                return this._insertViews(views, container, index);
+                return this._addViews(views, container, options);
             };
             View._removeViews = function (views, container) {
                 var self = this;
@@ -753,7 +843,7 @@
                 _(viewObjs).each(function (viewObj) {
                     var view = viewObj.view;
                     splice.call(self.views[container], viewObj.index, 1);
-                    self.undelegateNestedEvents(view);
+                    self.undelegateEntityEvents(view);
                     delete view.parent;
                 });
                 return this;
@@ -764,30 +854,67 @@
                 if ($previousEl && this.$container) {
                     $previousEl.replaceWith(this.$el);
                 }
+                this.ensureUI();
                 return this;
             };
-            View.delegateEvents = function (events) {
-                events = events || _.result(this, 'events');
-                if (!events)
-                    return this;
-                events = _(events).omit(nestedEventTypes);
-                return backbone.View.prototype.delegateEvents.call(this, events);
-            };
-            View.delegateNestedEvents = function (type, key, entities) {
+            View.ensureUI = function (ui) {
+                ui = ui || _.result(this, 'ui', {});
                 var self = this;
+                this.$ui = _(ui).mapObject(function (selector) {
+                    return self.$(selector);
+                });
+                return this;
+            };
+            View.delegateTriggers = function (triggers) {
+                triggers = triggers || _.result(this, 'triggers');
+                if (!triggers)
+                    return this;
+                var self = this;
+                this.undelegateTriggers();
+                _(triggers).each(function (event, key) {
+                    var match = key.match(delegateEventSplitter);
+                    var eventName = match[1];
+                    var selector = match[2];
+                    self.delegateTrigger(eventName, selector, _.bind(self.trigger, self, event));
+                });
+                return this;
+            };
+            View.delegateTrigger = function (eventName, selector, listener) {
+                this.$el.on(eventName + '.delegateTriggers' + this.cid, selector, listener);
+                return this;
+            };
+            View.undelegateTriggers = function () {
+                if (this.$el)
+                    this.$el.off('.delegateTriggers' + this.cid);
+                return this;
+            };
+            View.undelegateTrigger = function (eventName, selector, listener) {
+                this.$el.off(eventName + '.delegateTriggers' + this.cid, selector, listener);
+                return this;
+            };
+            View.delegateEntityEvents = function (entityType, entityName, entities) {
+                if (!_.has(this._entityEvents, entityType)) {
+                    throw new Error('Wrong entity type "' + entityType + '", available values: ' + entityTypes.join(', '));
+                }
+                var self = this;
+                if (!entities)
+                    entities = this[entityType][entityName];
+                if (!entities)
+                    return this;
                 if (!_.isArray(entities))
                     entities = [entities];
-                var listeners = this._nestedEventsHash[type][key];
-                if (listeners) {
-                    _(listeners).each(function (listener) {
+                var events = this._entityEvents[entityType][entityName];
+                if (events) {
+                    this.undelegateEntityEvents(entities);
+                    _(events).each(function (event) {
                         _(entities).each(function (entity) {
-                            self.listenTo(entity, listener.eventName, listener.handler);
+                            self.listenTo(entity, event.name, event.listener);
                         });
                     });
                 }
                 return this;
             };
-            View.undelegateNestedEvents = function (entities) {
+            View.undelegateEntityEvents = function (entities) {
                 var self = this;
                 if (!_.isArray(entities))
                     entities = [entities];
@@ -796,46 +923,72 @@
                 });
                 return this;
             };
-            View._prepareEvents = function (events) {
+            View._prepareEntityEvents = function () {
                 var self = this;
-                this._nestedEventsHash = {};
-                _(nestedEventTypes).each(function (type) {
-                    self._nestedEventsHash[type] = {};
+                this._entityEvents = {};
+                _(entityTypes).each(function (entityType) {
+                    self._entityEvents[entityType] = {};
                 });
-                events = events || _.result(this, 'events');
-                if (!events)
-                    return;
-                _(nestedEventTypes).each(function (type) {
-                    var typeEventsHash = self._nestedEventsHash[type];
-                    if (!_(events).has(type) || !_.isObject(events[type]))
+                _(entityEventTypes).each(function (eventType, index) {
+                    var events = _.result(self, eventType);
+                    if (!events)
                         return;
-                    _(events[type]).each(function (method, key) {
-                        if (!_.isFunction(method))
-                            method = self[method];
-                        if (!method)
-                            return;
-                        var match = key.match(delegateEventSplitter);
-                        var eventName = match[1];
-                        var entityKeys = match[2].replace(/ *, */g, ',').split(',');
-                        method = _.bind(method, self);
-                        _(entityKeys).each(function (entityKey) {
-                            typeEventsHash[entityKey] = typeEventsHash[entityKey] || [];
-                            typeEventsHash[entityKey].push({
-                                eventName: eventName,
-                                handler: method
-                            });
-                        });
+                    var entityType = entityTypes[index];
+                    self._addEntityEvents(entityType, events);
+                });
+            };
+            View._addEntityEvents = function (entityType, events) {
+                var self = this;
+                _(events).each(function (method, key) {
+                    if (!_.isFunction(method))
+                        method = self[method];
+                    if (!method)
+                        return;
+                    var match = key.match(delegateEventSplitter);
+                    var eventName = match[1];
+                    var entityNames = match[2].replace(entityNamesSplitter, ',').split(',');
+                    method = _.bind(method, self);
+                    _(entityNames).each(function (entityName) {
+                        self._addEntityEvent(entityType, entityName, eventName, method);
                     });
                 });
             };
-            View._prepareViews = function () {
-                var self = this;
-                _(this.views).each(function (views, container) {
-                    if (!_.isArray(views))
-                        views = [views];
-                    self.views[container] = views;
-                    self.delegateNestedEvents('views', container, views);
+            View._addEntityEvent = function (entityType, entityName, eventName, listener) {
+                var entityEvents = this._entityEvents[entityType];
+                entityEvents[entityName] = entityEvents[entityName] || [];
+                entityEvents[entityName].push({
+                    name: eventName,
+                    listener: listener
                 });
+            };
+            View._prepareViews = function () {
+                this.views = _.result(this, 'views', {});
+                this.views = _(this.views).mapObject(function (views) {
+                    if (!views)
+                        return [];
+                    views = _.isArray(views) ? views : [views];
+                    return _(views).map(function (view) {
+                        return _.isFunction(view) ? new view() : view;
+                    });
+                });
+            };
+            View._prepareModels = function () {
+                this.models = _.result(this, 'models', {});
+                this.models = _(this.models).mapObject(function (model) {
+                    return _.isFunction(model) ? new model() : model;
+                });
+                if (this.model && _.isFunction(this.model)) {
+                    this.model = new this.model();
+                }
+            };
+            View._prepareCollections = function () {
+                this.collections = _.result(this, 'collections', {});
+                this.collections = _(this.collections).mapObject(function (collection) {
+                    return _.isFunction(collection) ? new collection() : collection;
+                });
+                if (this.collection && _.isFunction(this.collection)) {
+                    this.collection = new this.collection();
+                }
             };
             View.attachViews = function (options) {
                 options = options || {};
@@ -845,7 +998,8 @@
                     if (!viewsGroup.length)
                         return;
                     _(viewsGroup).each(function (view) {
-                        view.attach(_(options).omit('include', 'exclude'));
+                        view.attachViews(_.omit(options, 'include', 'exclude'));
+                        view.attach();
                     });
                 });
                 return this;
@@ -853,7 +1007,7 @@
             View.afterAttach = function () {
                 return this;
             };
-            View._attach = function () {
+            View.attach = function () {
                 if (this.attached)
                     return this;
                 var previousView = this.$el.data('esencia-view');
@@ -861,20 +1015,18 @@
                     previousView.detach();
                 this.$el.data('esencia-view', this).attr('esencia-view', this.cid);
                 this.delegateEvents();
+                this.delegateTriggers();
                 this.attached = true;
                 this.afterAttach();
-                this.trigger('attach');
+                this.trigger('esencia:attach');
                 return this;
-            };
-            View.attach = function (options) {
-                this.attachViews(options);
-                return this._attach();
             };
             View.detachViews = function () {
                 _(this.views).each(function (viewsGroup) {
                     if (!viewsGroup.length)
                         return;
                     _(viewsGroup).each(function (view) {
+                        view.detachViews();
                         view.detach();
                     });
                 });
@@ -883,24 +1035,22 @@
             View.beforeDetach = function () {
                 return this;
             };
-            View._detach = function () {
+            View.detach = function () {
                 if (!this.attached)
                     return this;
-                this.trigger('detach');
+                this.trigger('esencia:detach');
                 this.beforeDetach();
                 this.$el.removeData('esencia-view').removeAttr('esencia-view');
                 this.undelegateEvents();
+                this.undelegateTriggers();
                 this.attached = false;
                 return this;
-            };
-            View.detach = function () {
-                this.detachViews();
-                return this._detach();
             };
             View.remove = function () {
                 if (this.parent) {
                     this.parent.removeView(this, this.container);
                 }
+                this.detachViews();
                 this.detach();
                 return backbone.View.prototype.remove.call(this);
             };
@@ -914,12 +1064,95 @@
             module.exports = backbone.View.extend(View);
         },
         function (module, exports) {
+            'use strict';
+            var backbone = _require(10);
+            var _ = _require(11);
+            var Router = _require(4);
+            var Collection = _require(0);
+            var Model = _require(3);
+            var View = _require(5);
+            var CollectionView = _require(1);
+            var ComponentsManager = _require(2);
+            var componentsManager = _require(7);
+            var extend = _require(9);
+            var Esencia = exports;
+            _.extend(Esencia, backbone.Events);
+            var backboneFields = [
+                    'Events',
+                    'History',
+                    'history'
+                ];
+            _.extend(Esencia, _.pick(backbone, backboneFields));
+            _.extend(Esencia, {
+                Router: Router,
+                Collection: Collection,
+                Model: Model,
+                View: View,
+                CollectionView: CollectionView,
+                ComponentsManager: ComponentsManager
+            });
+            Esencia.componentsManager = componentsManager;
+            Esencia.extend = extend;
+        },
+        function (module, exports) {
+            'use strict';
+            var ComponentsManager = _require(2);
+            module.exports = new ComponentsManager();
+        },
+        function (module, exports) {
+            'use strict';
+            var _ = _require(11);
+            var DEFAULT_EXEC_TYPE = 'PUT';
+            var urlError = function () {
+                throw new Error('A `url` property or function must be specified');
+            };
+            exports.wrapError = function (model, options) {
+                var error = options.error;
+                options.error = function (resp) {
+                    if (error)
+                        error.call(options.context, model, resp, options);
+                    model.trigger('error', model, resp, options);
+                };
+            };
+            exports.prepareOptions = function (method, model, options) {
+                options = _.extend({
+                    type: DEFAULT_EXEC_TYPE,
+                    dataType: 'json',
+                    contentType: 'application/json',
+                    processData: false
+                }, options);
+                if (!options.url) {
+                    var url = _.result(model, 'url') || urlError();
+                    options.url = url.replace(/[^\/]$/, '$&/') + method;
+                }
+                if (options.data && _.isObject(options.data) && !options.processData) {
+                    options.data = JSON.stringify(options.data);
+                }
+                return options;
+            };
+            var baseMethodsMap = {
+                    'POST': 'create',
+                    'PUT': 'update',
+                    'PATCH': 'patch',
+                    'DELETE': 'delete',
+                    'GET': 'read'
+                };
+            exports.getFakeBaseMethod = function (options) {
+                return baseMethodsMap[options.type.toUpperCase()];
+            };
+        },
+        function (module, exports) {
+            'use strict';
+            var backbone = _require(10);
+            module.exports = backbone.View.extend;
+        },
+        function (module, exports) {
             module.exports = __external_Backbone;
         },
         function (module, exports) {
             module.exports = __external__;
         }
     ];
-    return _require(2);
+    return _require(6);
 }));
 //# sourceMappingURL=esencia.js.map
