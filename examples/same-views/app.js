@@ -1,8 +1,8 @@
 'use strict';
 
 require([
-	'esencia', 'layout.view', 'content.view'
-], function(Esencia, LayoutView, ContentView) {
+	'esencia', 'layout.view', 'common/base.view'
+], function(Esencia, LayoutView, BaseView) {
 	var router = new Esencia.Router({
 		autoloadModules: false
 	});
@@ -11,6 +11,10 @@ require([
 		name: 'layout',
 		container: '#app',
 		View: LayoutView
+	});
+
+	var ContentView = BaseView.extend({
+		template: 'content'
 	});
 
 	router.route('first', {
@@ -30,6 +34,6 @@ require([
 	});
 
 	if (!Esencia.history.start({pushState: false})) {
-		router.navigate('first', {replace: true, trigger: true});
+		Esencia.history.navigate('first', {replace: true, trigger: true});
 	}
 });

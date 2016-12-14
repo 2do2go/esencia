@@ -395,6 +395,11 @@
                 this.options = options;
                 this.modules = {};
                 backbone.Router.apply(this, arguments);
+                if (this.autoloadModules) {
+                    this.route('*url', function (params) {
+                        this.loadModule(params.url);
+                    });
+                }
             };
             Router.component = function (options) {
                 return this.componentsManager.add(options);
@@ -455,23 +460,22 @@
                         return true;
                     }
                 });
-                var qs = params[paramsLength - 1];
+                var query = params[paramsLength - 1];
                 return [
                     namedParams,
-                    qs
+                    query
                 ];
             };
             Router.loadModule = function (fragment) {
                 var self = this;
                 fragment = fragment || backbone.history.fragment;
                 var moduleName = this.getModuleName(fragment);
-                this.require([this.modulesPath + moduleName], function (moduleInit) {
-                    if (!self.modules[moduleName]) {
-                        moduleInit(self);
+                if (!this.modules[moduleName]) {
+                    this.require([this.modulesPath + moduleName], function () {
                         self.modules[moduleName] = true;
                         backbone.history.loadUrl(fragment);
-                    }
-                }, this.onModuleError);
+                    }, this.onModuleError);
+                }
             };
             Router.getModuleName = function (fragment) {
                 return _(fragment.split('/')).find(_.identity) || this.defaultModuleName;
