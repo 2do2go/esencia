@@ -436,11 +436,7 @@
                     };
                 }
                 name = options.name || name;
-                backbone.Router.prototype.route.call(this, route, name, function () {
-                    console.log(backbone.history.handlers);
-                    console.log('>>>>>>', route, name, arguments[0]);
-                    callback.apply(this, arguments);
-                });
+                backbone.Router.prototype.route.call(this, route, name, callback);
             };
             Router._routeToRegExp = function (route) {
                 var paramNames = route.match(namesPattern) || [];
@@ -464,14 +460,13 @@
                         return true;
                     }
                 });
-                var qs = params[paramsLength - 1];
+                var query = params[paramsLength - 1];
                 return [
                     namedParams,
-                    qs
+                    query
                 ];
             };
             Router.loadModule = function (fragment) {
-                console.log('>> load', fragment);
                 var self = this;
                 fragment = fragment || backbone.history.fragment;
                 var moduleName = this.getModuleName(fragment);

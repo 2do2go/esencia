@@ -1,10 +1,17 @@
 'use strict';
 
-require([
-	'esencia', 'first.view'
-], function(Esencia, FirstView) {
+define([
+	'esencia', 'common/base.view'
+], function(Esencia, BaseView) {
+	Esencia.trigger('moduleLoaded', 'first');
+
+	// create new router with "first" route
 	var router = new Esencia.Router({
 		autoloadModules: false
+	});
+
+	var FirstView = BaseView.extend({
+		template: 'first'
 	});
 
 	router.route('first', {
@@ -13,5 +20,9 @@ require([
 			View: FirstView,
 			container: '#content'
 		}
+	});
+
+	router.on('route', function(route, params) {
+		Esencia.trigger('firstRouter.route', route, params);
 	});
 });

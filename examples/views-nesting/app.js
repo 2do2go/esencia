@@ -56,6 +56,6 @@ define([
 	});
 
 	if (!Esencia.history.start({pushState: false})) {
-		router.navigate('categories', {replace: true, trigger: true});
+		Esencia.history.navigate('categories', {replace: true, trigger: true});
 	}
 });
