@@ -13,8 +13,8 @@ var path = require('path');
 var del = require('del');
 var plumber = require('gulp-plumber');
 
-var SRC = 'lib/';
-var DEST = 'dist/';
+var SRC = 'lib';
+var DEST = 'dist';
 
 var capitalize = function(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
@@ -76,7 +76,7 @@ gulp.task('clean', function() {
 
 gulp.task('build:modules', function() {
 	return createBuildStream({
-		src: [SRC + '*.js', '!' + SRC + 'esencia.js'],
+		src: [path.join(SRC, '*.js'), '!' + path.join(SRC, 'esencia.js')],
 		base: SRC,
 		exports: function(filePath) {
 			return 'Esencia.' + capitalize(path.basename(filePath, '.js'));
@@ -87,7 +87,7 @@ gulp.task('build:modules', function() {
 
 gulp.task('build:bundle', function() {
 	return createBuildStream({
-		src: SRC + 'esencia.js',
+		src: path.join(SRC, 'esencia.js'),
 		base: SRC,
 		exports: 'Esencia',
 		dest: DEST
@@ -97,7 +97,7 @@ gulp.task('build:bundle', function() {
 gulp.task('build', ['build:bundle']);
 
 gulp.task('watch', function() {
-	return gulp.watch(SRC + '**/*.js', ['build']);
+	return gulp.watch(path.join(SRC, '**', '*.js'), ['build']);
 });
 
 gulp.task('default', gulpSequence('clean', 'build', 'watch'));

@@ -395,6 +395,11 @@
                 this.options = options;
                 this.modules = {};
                 backbone.Router.apply(this, arguments);
+                if (this.autoloadModules) {
+                    this.route('*url', function (params) {
+                        this.loadModule(params.url);
+                    });
+                }
             };
             Router.component = function (options) {
                 return this.componentsManager.add(options);
@@ -431,7 +436,11 @@
                     };
                 }
                 name = options.name || name;
-                backbone.Router.prototype.route.call(this, route, name, callback);
+                backbone.Router.prototype.route.call(this, route, name, function () {
+                    console.log(backbone.history.handlers);
+                    console.log('>>>>>>', route, name, arguments[0]);
+                    callback.apply(this, arguments);
+                });
             };
             Router._routeToRegExp = function (route) {
                 var paramNames = route.match(namesPattern) || [];
@@ -462,16 +471,16 @@
                 ];
             };
             Router.loadModule = function (fragment) {
+                console.log('>> load', fragment);
                 var self = this;
                 fragment = fragment || backbone.history.fragment;
                 var moduleName = this.getModuleName(fragment);
-                this.require([this.modulesPath + moduleName], function (moduleInit) {
-                    if (!self.modules[moduleName]) {
-                        moduleInit(self);
+                if (!this.modules[moduleName]) {
+                    this.require([this.modulesPath + moduleName], function () {
                         self.modules[moduleName] = true;
                         backbone.history.loadUrl(fragment);
-                    }
-                }, this.onModuleError);
+                    }, this.onModuleError);
+                }
             };
             Router.getModuleName = function (fragment) {
                 return _(fragment.split('/')).find(_.identity) || this.defaultModuleName;
