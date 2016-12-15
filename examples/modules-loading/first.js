@@ -6,9 +6,7 @@ define([
 	Esencia.trigger('moduleLoaded', 'first');
 
 	// create new router with "first" route
-	var router = new Esencia.Router({
-		autoloadModules: false
-	});
+	var router = new Esencia.Router();
 
 	var FirstView = BaseView.extend({
 		template: 'first'

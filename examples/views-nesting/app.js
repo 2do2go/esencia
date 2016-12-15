@@ -15,9 +15,7 @@ define([
 	UsersLayoutView,
 	UsersListView
 ) {
-	var router = new Esencia.Router({
-		autoloadModules: false
-	});
+	var router = new Esencia.Router();
 
 	router.component({
 		name: 'layout',

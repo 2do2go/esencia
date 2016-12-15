@@ -3,9 +3,7 @@
 require([
 	'esencia', 'layout.view', 'common/base.view'
 ], function(Esencia, LayoutView, BaseView) {
-	var router = new Esencia.Router({
-		autoloadModules: false
-	});
+	var router = new Esencia.Router();
 
 	router.component({
 		name: 'layout',

@@ -13,6 +13,7 @@ require([
 	});
 
 	var router = new Esencia.Router({
+		autoloadModules: true,
 		modulesPath: './'
 	});
 

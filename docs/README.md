@@ -55,7 +55,7 @@ Router constructor takes one argument - hash of options. There are following opt
 
 * `autoloadModules`
 
-    *Boolean*, default: `true`
+    *Boolean*, default: `false`
 
     If `true` than Esencia will automatically try to load module to get controller for current url.
 
