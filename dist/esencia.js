@@ -395,6 +395,11 @@
                 this.options = options;
                 this.modules = {};
                 backbone.Router.apply(this, arguments);
+                if (this.autoloadModules) {
+                    this.route('*url', function (params) {
+                        this.loadModule(params.url);
+                    });
+                }
             };
             Router.component = function (options) {
                 return this.componentsManager.add(options);
@@ -455,23 +460,22 @@
                         return true;
                     }
                 });
-                var qs = params[paramsLength - 1];
+                var query = params[paramsLength - 1];
                 return [
                     namedParams,
-                    qs
+                    query
                 ];
             };
             Router.loadModule = function (fragment) {
                 var self = this;
                 fragment = fragment || backbone.history.fragment;
                 var moduleName = this.getModuleName(fragment);
-                this.require([this.modulesPath + moduleName], function (moduleInit) {
-                    if (!self.modules[moduleName]) {
-                        moduleInit(self);
+                if (!this.modules[moduleName]) {
+                    this.require([this.modulesPath + moduleName], function () {
                         self.modules[moduleName] = true;
                         backbone.history.loadUrl(fragment);
-                    }
-                }, this.onModuleError);
+                    }, this.onModuleError);
+                }
             };
             Router.getModuleName = function (fragment) {
                 return _(fragment.split('/')).find(_.identity) || this.defaultModuleName;
@@ -1004,12 +1008,17 @@
                 });
                 return this;
             };
+            View.beforeAttach = function () {
+                return this;
+            };
             View.afterAttach = function () {
                 return this;
             };
             View.attach = function () {
                 if (this.attached)
                     return this;
+                this.beforeAttach();
+                this.trigger('esencia:beforeAttach');
                 var previousView = this.$el.data('esencia-view');
                 if (previousView)
                     previousView.detach();
@@ -1018,7 +1027,7 @@
                 this.delegateTriggers();
                 this.attached = true;
                 this.afterAttach();
-                this.trigger('esencia:attach');
+                this.trigger('esencia:afterAttach');
                 return this;
             };
             View.detachViews = function () {
@@ -1035,15 +1044,20 @@
             View.beforeDetach = function () {
                 return this;
             };
+            View.afterDetach = function () {
+                return this;
+            };
             View.detach = function () {
                 if (!this.attached)
                     return this;
-                this.trigger('esencia:detach');
+                this.trigger('esencia:beforeDetach');
                 this.beforeDetach();
                 this.$el.removeData('esencia-view').removeAttr('esencia-view');
                 this.undelegateEvents();
                 this.undelegateTriggers();
                 this.attached = false;
+                this.trigger('esencia:afterDetach');
+                this.afterDetach();
                 return this;
             };
             View.remove = function () {

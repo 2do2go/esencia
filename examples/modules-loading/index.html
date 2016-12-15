@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Esencia Todo Example</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+		<link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
+		<link rel="stylesheet" href="../../node_modules/bootswatch/flatly/bootstrap.min.css">
+		<link rel="stylesheet" href="./styles.css">
+	</head>
+	<body>
+		<div id="app"></div>
+
+		<script id="tmpl-layout" type="text/template">
+			<div class="container">
+				<div class="row">
+					<div class="col-sm-4">
+						<div class="list-group">
+							<a class="list-group-item" href="first">First</a>
+							<a class="list-group-item" href="second">Second</a>
+						</div>
+					</div>
+					<div class="col-sm-8" id="content"></div>
+				</div>
+			</div>
+		</script>
+
+		<script id="tmpl-first" type="text/template">
+			<div class="well">
+				<h1>First View</h1>
+				<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam euismod dapibus odio a vestibulum. Morbi lobortis enim vitae ligula dapibus efficitur. Sed iaculis quam risus, nec malesuada elit gravida quis. Nunc eget leo tellus. Vivamus in lacus vel nibh malesuada consequat ut id sem. Fusce feugiat porttitor quam, vel imperdiet lorem euismod sit amet. Ut rhoncus augue ac lacus blandit sagittis. Suspendisse egestas consequat ipsum, quis molestie est lobortis non. Vestibulum at tempor nisl. Nunc interdum eleifend urna, nec suscipit erat sodales id.</p>
+			</div>
+		</script>
+
+		<script id="tmpl-second" type="text/template">
+			<div class="well">
+				<h1>Second View</h1>
+				<p>Curabitur neque erat, porta vel mattis ut, sodales nec justo. Duis vel mattis diam. Ut at mauris dictum, efficitur nibh vitae, ullamcorper felis. Morbi est ligula, hendrerit et sagittis eu, auctor eu nisl. Aenean convallis vehicula lobortis. Cras turpis enim, tincidunt vel sem eu, ullamcorper sollicitudin felis. Curabitur dapibus tincidunt magna suscipit scelerisque. Sed venenatis, nunc a malesuada vehicula, eros ligula mollis lectus, nec iaculis tortor lacus a magna. Sed egestas nibh vitae nisl gravida condimentum. Etiam mollis, sapien at rhoncus dictum, felis augue posuere ligula, at hendrerit tortor metus id est. Phasellus imperdiet viverra placerat.</p>
+			</div>
+		</script>
+
+		<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+		<!--[if lt IE 9]>
+			<script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.2/html5shiv.min.js"></script>
+			<script src="//cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+
+		<script src="../../node_modules/requirejs/require.js"></script>
+		<script src="../common/config.js"></script>
+		<script>require(['app']);</script>
+	</body>
+</html>

@@ -9,7 +9,11 @@ JavaScript framework based on Backbone.js. Extends Backbone router, view and col
 * grouping components and routes in modules
 * etc.
 
-Work in progress...
+Work in progress. Todo list:
+
+* Separate modules loader from router
+* Use Promises for async views resolving
+* Improve component node changes detection
 
 ## Documentation
 
