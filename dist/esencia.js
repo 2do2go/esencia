@@ -373,7 +373,7 @@
             var Router = {
                     componentsManager: componentsManager,
                     namedParameters: true,
-                    autoloadModules: true,
+                    autoloadModules: false,
                     modulesPath: 'modules/',
                     defaultModuleName: 'main',
                     require: window.require,
