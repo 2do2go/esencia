@@ -541,7 +541,7 @@
                     self.delegateEntityEvents('views', container, views);
                 });
                 backbone.View.call(this, _.omit(options, 'model', 'collection'));
-                this.modifyViewsState(options);
+                this.modifyViewsState(_.pick(options, stateOptions));
                 _(this.views).each(function (views) {
                     _(views).each(function (view) {
                         if (view.isWaiting()) {
@@ -564,8 +564,11 @@
                 }
             };
             View.modifyState = function (state, options) {
-                state = state || {};
-                options = options || {};
+                state = _({}).defaults(state, { data: {} });
+                options = _({}).defaults(options, {
+                    views: true,
+                    load: false
+                });
                 var self = this;
                 _(stateOptions).each(function (stateOption) {
                     if (!_.has(state, stateOption))
@@ -611,7 +614,9 @@
                         }
                     });
                 });
-                this.modifyViewsState(state, options);
+                if (options.views) {
+                    this.modifyViewsState(state, options);
+                }
                 if (options.load) {
                     this.loadState();
                 }
