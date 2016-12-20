@@ -565,10 +565,7 @@
             };
             View.modifyState = function (state, options) {
                 state = _({}).defaults(state, { data: {} });
-                options = _({}).defaults(options, {
-                    views: true,
-                    load: false
-                });
+                options = _({}).defaults(options, { render: true });
                 var self = this;
                 _(stateOptions).each(function (stateOption) {
                     if (!_.has(state, stateOption))
@@ -614,10 +611,9 @@
                         }
                     });
                 });
-                if (options.views) {
+                if (options.render) {
                     this.modifyViewsState(state, options);
-                }
-                if (options.load) {
+                } else {
                     this.loadState();
                 }
                 return this;
