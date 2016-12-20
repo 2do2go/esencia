@@ -659,6 +659,7 @@
                 if (this.template) {
                     var stateChanged = this.loadState();
                     if (options.force || !this.attached || stateChanged) {
+                        this.detachViews(options);
                         this.detach();
                         var locals = _(this).chain().result('templateHelpers').extend(this.templateData).value();
                         var html = this.renderTemplate(this.template, locals);
@@ -680,7 +681,7 @@
                 }
                 this.trigger('esencia:render');
                 this.renderViews(options);
-                if (!this.parent || this.$container) {
+                if (!this.parent || this.$el.parent().length) {
                     this.attachViews(options);
                     this.attach();
                 }
@@ -714,12 +715,12 @@
                     }
                     var containerEl = $container.get(0);
                     var domChanged = _(viewsGroup).some(function (view) {
-                            return !view.attached || !view.$container || view.$container.get(0) !== containerEl;
+                            var parentEl = view.$el.parent().get(0);
+                            return !view.attached || !parentEl || parentEl !== containerEl;
                         });
                     if (domChanged) {
                         var $els = [];
                         _(viewsGroup).each(function (view) {
-                            view.$container = $container;
                             $els.push(view.$el);
                         });
                         $container.append($els);
@@ -855,7 +856,7 @@
             View.setElement = function (element) {
                 var $previousEl = this.$el;
                 this._setElement(element);
-                if ($previousEl && this.$container) {
+                if ($previousEl && $previousEl.parent().length) {
                     $previousEl.replaceWith(this.$el);
                 }
                 this.ensureUI();
@@ -1020,8 +1021,10 @@
                 this.beforeAttach();
                 this.trigger('esencia:beforeAttach');
                 var previousView = this.$el.data('esencia-view');
-                if (previousView)
+                if (previousView) {
+                    previousView.detachViews();
                     previousView.detach();
+                }
                 this.$el.data('esencia-view', this).attr('esencia-view', this.cid);
                 this.delegateEvents();
                 this.delegateTriggers();
@@ -1030,12 +1033,15 @@
                 this.trigger('esencia:afterAttach');
                 return this;
             };
-            View.detachViews = function () {
-                _(this.views).each(function (viewsGroup) {
+            View.detachViews = function (options) {
+                options = options || {};
+                _(this.views).each(function (viewsGroup, container) {
+                    if (isContainerSkipped(container, options))
+                        return;
                     if (!viewsGroup.length)
                         return;
                     _(viewsGroup).each(function (view) {
-                        view.detachViews();
+                        view.detachViews(_.omit(options, 'include', 'exclude'));
                         view.detach();
                     });
                 });
