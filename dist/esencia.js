@@ -32,8 +32,10 @@
             var execUtils = _require(8);
             var Collection = {};
             Collection.sync = function (method, collection, options) {
-                options = execUtils.prepareOptions(method, collection, options);
-                method = execUtils.getFakeBaseMethod(options);
+                if (!_.contains(execUtils.baseMethods, method)) {
+                    options = execUtils.prepareOptions(method, collection, options);
+                    method = execUtils.getFakeBaseMethod(options);
+                }
                 return backbone.Collection.prototype.sync.call(this, method, collection, options);
             };
             Collection.exec = function (method, options) {
@@ -341,8 +343,10 @@
             var execUtils = _require(8);
             var Model = {};
             Model.sync = function (method, model, options) {
-                options = execUtils.prepareOptions(method, model, options);
-                method = execUtils.getFakeBaseMethod(options);
+                if (!_.contains(execUtils.baseMethods, method)) {
+                    options = execUtils.prepareOptions(method, model, options);
+                    method = execUtils.getFakeBaseMethod(options);
+                }
                 return backbone.Model.prototype.sync.call(this, method, model, options);
             };
             Model.exec = function (method, options) {
@@ -1158,6 +1162,7 @@
                     'DELETE': 'delete',
                     'GET': 'read'
                 };
+            exports.baseMethods = _.values(baseMethodsMap);
             exports.getFakeBaseMethod = function (options) {
                 return baseMethodsMap[options.type.toUpperCase()];
             };
