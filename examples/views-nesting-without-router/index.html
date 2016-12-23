@@ -8,14 +8,15 @@
 
 		<link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
 		<link rel="stylesheet" href="../../node_modules/bootswatch/flatly/bootstrap.min.css">
-		<link rel="stylesheet" href="./styles.css">
+
+		<link rel="stylesheet" href="../common/styles.css">
 	</head>
 	<body>
 		<div id="app"></div>
 
 		<script id="tmpl-layout" type="text/template">
-			<div class="container block">
-				<h1>Main layout</h1>
+			<div class="container">
+				<h1 style="margin-top: 0;">Views nesting without router</h1>
 				<div class="row">
 					<div class="col-sm-4" id="menu"></div>
 					<div class="col-sm-8" id="content"></div>
@@ -31,15 +32,15 @@
 		</script>
 
 		<script id="tmpl-categories-layout" type="text/template">
-			<div class="block">
-				<h2>Categories layout</h2>
+			<div>
+				<h2 style="margin-top: 0;">Categories layout</h2>
 				<div id="list"></div>
 			</div>
 		</script>
 
 		<script id="tmpl-categories-list" type="text/template">
-			<div class="block">
-				<h3>Categories list</h3>
+			<div>
+				<h3 style="margin-top: 0;">Categories list</h3>
 				<ul class="list-group">
 					<% for (var i = 0; i < 5; i++) { %>
 						<li class="list-group-item list-group-item-success">Category <% print(i + 1) %> - <% print(Math.random()) %></li>
@@ -50,15 +51,15 @@
 		</script>
 
 		<script id="tmpl-users-layout" type="text/template">
-			<div class="block">
-				<h2>Users layout</h2>
+			<div>
+				<h2 style="margin-top: 0;">Users layout</h2>
 				<div id="list"></div>
 			</div>
 		</script>
 
 		<script id="tmpl-users-list" type="text/template">
-			<div class="block">
-				<h3>Users list</h3>
+			<div>
+				<h3 style="margin-top: 0;">Users list</h3>
 				<ul class="list-group">
 					<% for (var i = 0; i < 5; i++) { %>
 						<li class="list-group-item list-group-item-warning">User <% print(i + 1) %> - <% print(Math.random()) %></li>

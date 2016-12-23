@@ -8,24 +8,30 @@
 
 		<link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
 		<link rel="stylesheet" href="../../node_modules/bootswatch/flatly/bootstrap.min.css">
-		<link rel="stylesheet" href="./styles.css">
+
+		<link rel="stylesheet" href="../common/styles.css">
 	</head>
 	<body>
 		<div id="app"></div>
 
 		<script id="tmpl-layout" type="text/template">
 			<div class="container">
+				<h1 style="margin-top: 0;">Same views in different containers</h1>
+				<div class="row">
+					<div class="col-xs-6">
+						<a class="btn btn-default btn-block" href="#first">Activate first</a>
+					</div>
+					<div class="col-xs-6">
+						<a class="btn btn-default btn-block" href="#second">Activate second</a>
+					</div>
+				</div>
 				<div class="row">
 					<div class="col-sm-6">
-						<div class="form-group text-center">
-							<a class="btn btn-default" href="first">Activate</a>
-						</div>
+						<h3>First container</h3>
 						<div class="well" id="first"></div>
 					</div>
 					<div class="col-sm-6">
-						<div class="form-group text-center">
-							<a class="btn btn-default" href="second">Activate</a>
-						</div>
+						<h3>Second container</h3>
 						<div class="well" id="second"></div>
 					</div>
 				</div>
@@ -35,7 +41,7 @@
 		<script id="tmpl-content" type="text/template">
 			<div>
 				<p>Rendered at <% print(new Date().toString()) %></p>
-				<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+				<p style="margin-bottom: 0;">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
 				tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
 				quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
 				consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse

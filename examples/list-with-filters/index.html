@@ -8,14 +8,15 @@
 
 		<link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
 		<link rel="stylesheet" href="../../node_modules/bootswatch/flatly/bootstrap.min.css">
-		<link rel="stylesheet" href="./styles.css">
+
+		<link rel="stylesheet" href="../common/styles.css">
 	</head>
 	<body>
 		<div id="app"></div>
 
 		<script id="tmpl-layout" type="text/template">
-			<div class="container block">
-				<h1>Posts from <a href="https://jsonplaceholder.typicode.com/">JSONPlaceholder</a></h1>
+			<div class="container">
+				<h1 style="margin-top: 0;">Posts from <a href="https://jsonplaceholder.typicode.com/">JSONPlaceholder</a></h1>
 				<div class="row">
 					<div class="col-sm-4">
 						<div class="form-group">
@@ -34,7 +35,7 @@
 							<div id="query"></div>
 						</div>
 
-						<div class="form-group" id="posts"></div>
+						<div id="posts"></div>
 					</div>
 				</div>
 			</div>
@@ -53,17 +54,15 @@
 		</script>
 
 		<script id="tmpl-posts" type="text/template">
-			<div class="block">
-				<ul class="list-group">
-					<% _(posts).each(function(post) { %>
-						<li class="list-group-item">
-							<h4 class="list-group-item-heading">Post <% print(post.id) %>: <% print(post.title) %></h4>
-							<p class="list-group-item-text"><% print(post.body) %></p>
-							<div class="text-info">User: <% print(post.user.name) %></div>
-						</li>
-					<% }); %>
-				</ul>
-			</div>
+			<ul class="list-group">
+				<% _(posts).each(function(post) { %>
+					<li class="list-group-item">
+						<h4 class="list-group-item-heading">Post <% print(post.id) %>: <% print(post.title) %></h4>
+						<p class="list-group-item-text"><% print(post.body) %></p>
+						<div class="text-info">User: <% print(post.user.name) %></div>
+					</li>
+				<% }); %>
+			</ul>
 		</script>
 
 		<script id="tmpl-preloader" type="text/template">

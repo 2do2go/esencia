@@ -1,6 +1,7 @@
 body {
 	min-width: 320px;
 	background: #eee;
+	padding: 0;
 }
 
 input[type="checkbox"] {

@@ -1,18 +1,14 @@
 'use strict';
 
 require([
-	'esencia', 'layout.view', 'common/base.view'
-], function(Esencia, LayoutView, BaseView) {
+	'esencia', 'layout.view', 'content.view'
+], function(Esencia, LayoutView, ContentView) {
 	var router = new Esencia.Router();
 
 	router.component({
 		name: 'layout',
 		container: '#app',
 		View: LayoutView
-	});
-
-	var ContentView = BaseView.extend({
-		template: 'content'
 	});
 
 	router.route('first', {

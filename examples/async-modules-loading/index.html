@@ -8,18 +8,20 @@
 
 		<link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css">
 		<link rel="stylesheet" href="../../node_modules/bootswatch/flatly/bootstrap.min.css">
-		<link rel="stylesheet" href="./styles.css">
+
+		<link rel="stylesheet" href="../common/styles.css">
 	</head>
 	<body>
 		<div id="app"></div>
 
 		<script id="tmpl-layout" type="text/template">
 			<div class="container">
+				<h1 style="margin-top: 0">Async modules loading</h1>
 				<div class="row">
 					<div class="col-sm-4">
 						<div class="list-group">
-							<a class="list-group-item" href="first">First</a>
-							<a class="list-group-item" href="second">Second</a>
+							<a class="list-group-item" href="first">Activate first</a>
+							<a class="list-group-item" href="second">Activate second</a>
 						</div>
 					</div>
 					<div class="col-sm-8" id="content"></div>
@@ -29,14 +31,14 @@
 
 		<script id="tmpl-first" type="text/template">
 			<div class="well">
-				<h1>First View</h1>
+				<h1 style="margin-top: 0;">First View</h1>
 				<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam euismod dapibus odio a vestibulum. Morbi lobortis enim vitae ligula dapibus efficitur. Sed iaculis quam risus, nec malesuada elit gravida quis. Nunc eget leo tellus. Vivamus in lacus vel nibh malesuada consequat ut id sem. Fusce feugiat porttitor quam, vel imperdiet lorem euismod sit amet. Ut rhoncus augue ac lacus blandit sagittis. Suspendisse egestas consequat ipsum, quis molestie est lobortis non. Vestibulum at tempor nisl. Nunc interdum eleifend urna, nec suscipit erat sodales id.</p>
 			</div>
 		</script>
 
 		<script id="tmpl-second" type="text/template">
 			<div class="well">
-				<h1>Second View</h1>
+				<h1 style="margin-top: 0;">Second View</h1>
 				<p>Curabitur neque erat, porta vel mattis ut, sodales nec justo. Duis vel mattis diam. Ut at mauris dictum, efficitur nibh vitae, ullamcorper felis. Morbi est ligula, hendrerit et sagittis eu, auctor eu nisl. Aenean convallis vehicula lobortis. Cras turpis enim, tincidunt vel sem eu, ullamcorper sollicitudin felis. Curabitur dapibus tincidunt magna suscipit scelerisque. Sed venenatis, nunc a malesuada vehicula, eros ligula mollis lectus, nec iaculis tortor lacus a magna. Sed egestas nibh vitae nisl gravida condimentum. Etiam mollis, sapien at rhoncus dictum, felis augue posuere ligula, at hendrerit tortor metus id est. Phasellus imperdiet viverra placerat.</p>
 			</div>
 		</script>
