@@ -97,9 +97,6 @@
             var backbone = _require(10);
             var View = _require(5);
             var extend = _require(9);
-            function isTreeNodeChanged(oldNode, node) {
-                return Boolean(!oldNode || oldNode.component.name !== node.component.name || !oldNode.view || oldNode.view instanceof node.component.View === false || oldNode.view.isWaiting() || !oldNode.view.attached || oldNode.view.applyState());
-            }
             var ComponentsManager = function (options) {
                 options = options || {};
                 _.extend(this, _.pick(options, componentManagerOptions));
@@ -219,11 +216,12 @@
                     if (!names.length) {
                         throw new Error('Component name or names to load should be set');
                     }
+                    this._stopLoading();
                     var treeNodes = this._buildTree(names);
                     var oldTreeNodes = this.tree;
                     this.tree = [];
                     this.currentNames = names;
-                    this._applyTree({
+                    this._loadTree({
                         parent: { children: this.tree },
                         oldNodes: oldTreeNodes,
                         nodes: treeNodes
@@ -279,42 +277,42 @@
                     }
                     return tree;
                 },
-                _applyTree: function (treeParams, options, callback) {
+                _loadTree: function (treeParams, options, callback) {
                     var self = this;
                     var parent = treeParams.parent;
                     var afterCallback = _.after(treeParams.nodes.length, callback);
-                    var updateAndProcessNext = function (oldNode, node) {
-                        var container = node.component.container;
-                        var children = node.children;
-                        var oldChildren = oldNode ? oldNode.children : [];
-                        node.view.update(options.viewOptions);
-                        var exclude = _.union(_(children).chain().map(function (child) {
-                                return child.component.container;
-                            }).compact().value(), _(oldChildren).chain().map(function (child) {
-                                return child.component.container;
+                    var isNodeChanged = function (oldNode, node) {
+                        return Boolean(_.isEmpty(oldNode) || oldNode.component.name !== node.component.name || !oldNode.view || oldNode.view instanceof node.component.View === false || oldNode.view.isWaiting() || !oldNode.view.attached || oldNode.view.applyState());
+                    };
+                    var renderNodeAndProcessChildren = function (params) {
+                        var node = params.node;
+                        var exclude = _.union(_(params.oldChildren).chain().map(function (node) {
+                                return node.component.container;
+                            }).compact().value(), _(params.children).chain().map(function (node) {
+                                return node.component.container;
                             }).compact().value());
-                        if (!node.view.attached && container) {
+                        node.view.update(options.viewOptions, { exclude: exclude });
+                        if (!node.view.attached && node.component.container) {
+                            var container = node.component.container;
                             parent.view.setView(node.view, container).renderViews({ include: [container] }).attachViews({ include: [container] });
                         } else {
                             node.view.render({ exclude: exclude });
                         }
                         if (node.view.isWaiting()) {
-                            self.listenToOnce(node.view, 'resolved', function () {
+                            self.listenToOnce(node.view, 'updated', function () {
                                 node.view.render({ exclude: exclude });
                             });
                         }
-                        node.children = [];
-                        parent.children.push(node);
-                        self._applyTree({
+                        self._loadTree({
                             parent: node,
-                            oldNodes: oldChildren,
-                            nodes: children
+                            oldNodes: params.oldChildren,
+                            nodes: params.children
                         }, options, afterCallback);
                     };
                     _(treeParams.nodes).each(function (node, index) {
-                        var oldNode = treeParams.oldNodes[index] || null;
-                        if (isTreeNodeChanged(oldNode, node)) {
-                            if (oldNode && oldNode.view) {
+                        var oldNode = treeParams.oldNodes[index] || {};
+                        if (isNodeChanged(oldNode, node)) {
+                            if (oldNode.view) {
                                 if (oldNode.component.container) {
                                     if (oldNode.component.container !== node.component.container) {
                                         oldNode.view.remove();
@@ -324,18 +322,51 @@
                                 }
                             }
                             node.view = new node.component.View(_(node.component).chain().pick('model', 'models', 'collection', 'collections').extend(_.result(node.component, 'viewOptions'), { componentsManager: self }, options.viewOptions).value());
-                            if (node.view.isWaiting()) {
-                                self.listenToOnce(node.view, 'resolved', function () {
-                                    updateAndProcessNext(null, node);
-                                });
-                            } else {
-                                updateAndProcessNext(null, node);
-                            }
                         } else {
                             node.view = oldNode.view;
-                            updateAndProcessNext(oldNode, node);
+                        }
+                        var children = node.children;
+                        node.children = [];
+                        parent.children.push(node);
+                        if (node.view.isWaiting()) {
+                            self.listenToOnce(node.view, 'initialized', function () {
+                                renderNodeAndProcessChildren({
+                                    node: node,
+                                    oldChildren: oldNode.children || [],
+                                    children: children
+                                });
+                            });
+                        } else {
+                            renderNodeAndProcessChildren({
+                                node: node,
+                                oldChildren: oldNode.children || [],
+                                children: children
+                            });
                         }
                     });
+                    _(treeParams.oldNodes).chain().tail(treeParams.nodes.length).each(function (node) {
+                        if (node.view) {
+                            if (node.component.container) {
+                                node.view.remove();
+                            } else {
+                                node.view.detach();
+                            }
+                        }
+                    });
+                },
+                _stopLoading: function () {
+                    var self = this;
+                    var stopLoading = function (nodes) {
+                        _(nodes).each(function (node) {
+                            if (node.view) {
+                                self.stopListening(node.view);
+                            }
+                            if (node.children.length) {
+                                stopLoading(node.children);
+                            }
+                        });
+                    };
+                    stopLoading(this.tree);
                 }
             });
             ComponentsManager.extend = extend;
@@ -551,8 +582,8 @@
                     self.delegateEntityEvents('views', container, views);
                 });
                 backbone.View.call(this, _.omit(options, 'model', 'collection'));
-                _(this.views).each(function (views) {
-                    _(views).each(function (view) {
+                _(this.views).each(function (viewsGroup) {
+                    _(viewsGroup).each(function (view) {
                         if (view.isWaiting()) {
                             self.listenToOnce(view, 'resolved', self.wait());
                         }
@@ -579,8 +610,8 @@
                 }
             };
             View.updateState = function (state, options) {
-                state = _({}).defaults(state, { data: {} });
-                options = _({}).defaults(options, { apply: true });
+                state = _.defaults({}, state, { data: {} });
+                options = _.defaults({}, options, { apply: true });
                 var self = this;
                 _(stateOptions).each(function (stateOption) {
                     if (!_.has(state, stateOption))
@@ -643,16 +674,19 @@
             };
             View._update = function () {
             };
-            View.update = function (state) {
+            View.update = function (state, options) {
                 if (!this.initialized) {
                     throw new Error('Method .update() is not available while view is not initialized');
                 }
+                options = _.defaults({}, options, { apply: false });
                 var self = this;
                 this.waitAvailable = true;
-                this.updateState(state, { apply: false });
+                this.updateState(state, options);
                 this._update(state);
-                _(this.views).each(function (views) {
-                    _(views).each(function (view) {
+                _(this.views).each(function (viewsGroup, container) {
+                    if (isContainerSkipped(container, options))
+                        return;
+                    _(viewsGroup).each(function (view) {
                         if (view.isWaiting()) {
                             self.listenToOnce(view, 'resolved', self.wait());
                         }
@@ -671,7 +705,7 @@
             };
             View.wait = function () {
                 if (!this.waitAvailable) {
-                    throw new Error('Method .wait() is not available');
+                    throw new Error('Method .wait() is available only in initialization or updating');
                 }
                 var self = this;
                 ++this.waitsCounter;
@@ -738,6 +772,8 @@
                 return template(locals);
             };
             View.renderViews = function (options) {
+                if (!this.initialized)
+                    return this;
                 var self = this;
                 _(this.views).each(function (viewsGroup, container) {
                     if (isContainerSkipped(container, options))
@@ -773,11 +809,11 @@
                 return this._setViews(views, container, options);
             };
             View.appendView = function (view, container, options) {
-                options = _(options || {}).omit('at');
+                options = _.omit(options || {}, 'at');
                 return this._addViews([view], container, options);
             };
             View.appendViews = function (views, container, options) {
-                options = _(options || {}).omit('at');
+                options = _.omit(options || {}, 'at');
                 return this._addViews(views, container, options);
             };
             View.prependView = function (view, container, options) {
@@ -1038,8 +1074,6 @@
                 _(this.views).each(function (viewsGroup, container) {
                     if (isContainerSkipped(container, options))
                         return;
-                    if (!viewsGroup.length)
-                        return;
                     _(viewsGroup).each(function (view) {
                         view.attachViews(_.omit(options, 'include', 'exclude'));
                         view.attach();
@@ -1075,8 +1109,6 @@
                 options = options || {};
                 _(this.views).each(function (viewsGroup, container) {
                     if (isContainerSkipped(container, options))
-                        return;
-                    if (!viewsGroup.length)
                         return;
                     _(viewsGroup).each(function (view) {
                         view.detachViews(_.omit(options, 'include', 'exclude'));
