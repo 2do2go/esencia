@@ -26,7 +26,7 @@ define([
 		}
 	};
 
-	View.renderTemplate = function(template, data) {
+	View._renderTemplate = function(template, data) {
 		return utils.render(template, data);
 	};
 

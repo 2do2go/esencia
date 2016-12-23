@@ -11,8 +11,8 @@ define([
 		viewEvents: {
 			'click #menu': 'onMenuClick'
 		},
-		modifyViewsState: function(state) {
-			this.getView('#menu').modifyState({
+		_update: function(state) {
+			this.getView('#menu').update({
 				data: {
 					selected: state.data.fragment.match(/[^\?\/]+/)[0]
 				}

@@ -11,8 +11,8 @@ define([
 		viewEvents: {
 			'click #menu': 'onMenuClick'
 		},
-		modifyViewsState: function() {
-			this.getView('#menu').modifyState({
+		_update: function() {
+			this.getView('#menu').update({
 				data: {
 					selected: this.componentsManager.currentNames[0]
 				}

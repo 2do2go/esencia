@@ -98,7 +98,7 @@
             var View = _require(5);
             var extend = _require(9);
             function isTreeNodeChanged(oldNode, node) {
-                return Boolean(!oldNode || oldNode.component.name !== node.component.name || !oldNode.view || oldNode.view instanceof node.component.View === false || oldNode.view.isWaiting() || !oldNode.view.attached || oldNode.view.loadState());
+                return Boolean(!oldNode || oldNode.component.name !== node.component.name || !oldNode.view || oldNode.view instanceof node.component.View === false || oldNode.view.isWaiting() || !oldNode.view.attached || oldNode.view.applyState());
             }
             var ComponentsManager = function (options) {
                 options = options || {};
@@ -283,19 +283,25 @@
                     var self = this;
                     var parent = treeParams.parent;
                     var afterCallback = _.after(treeParams.nodes.length, callback);
-                    var iterate = function (oldNode, node) {
+                    var updateAndProcessNext = function (oldNode, node) {
                         var container = node.component.container;
                         var children = node.children;
                         var oldChildren = oldNode ? oldNode.children : [];
+                        node.view.update(options.viewOptions);
+                        var exclude = _.union(_(children).chain().map(function (child) {
+                                return child.component.container;
+                            }).compact().value(), _(oldChildren).chain().map(function (child) {
+                                return child.component.container;
+                            }).compact().value());
                         if (!node.view.attached && container) {
                             parent.view.setView(node.view, container).renderViews({ include: [container] }).attachViews({ include: [container] });
                         } else {
-                            var exclude = _.union(_(children).chain().map(function (child) {
-                                    return child.component.container;
-                                }).compact().value(), _(oldChildren).chain().map(function (child) {
-                                    return child.component.container;
-                                }).compact().value());
                             node.view.render({ exclude: exclude });
+                        }
+                        if (node.view.isWaiting()) {
+                            self.listenToOnce(node.view, 'resolved', function () {
+                                node.view.render({ exclude: exclude });
+                            });
                         }
                         node.children = [];
                         parent.children.push(node);
@@ -319,16 +325,15 @@
                             }
                             node.view = new node.component.View(_(node.component).chain().pick('model', 'models', 'collection', 'collections').extend(_.result(node.component, 'viewOptions'), { componentsManager: self }, options.viewOptions).value());
                             if (node.view.isWaiting()) {
-                                self.listenToOnce(node.view, 'esencia:resolve', function () {
-                                    iterate(null, node);
+                                self.listenToOnce(node.view, 'resolved', function () {
+                                    updateAndProcessNext(null, node);
                                 });
                             } else {
-                                iterate(null, node);
+                                updateAndProcessNext(null, node);
                             }
                         } else {
                             node.view = oldNode.view;
-                            node.view.modifyState(options.viewOptions);
-                            iterate(oldNode, node);
+                            updateAndProcessNext(oldNode, node);
                         }
                     });
                 }
@@ -500,6 +505,7 @@
                 return Boolean(exclude && _.contains(_.isArray(exclude) ? exclude : [exclude], container) || include && !_.contains(_.isArray(include) ? include : [include], container));
             }
             var View = {
+                    initialized: false,
                     templateHelpers: {},
                     waitsCounter: 0,
                     waitAvailable: true,
@@ -545,11 +551,10 @@
                     self.delegateEntityEvents('views', container, views);
                 });
                 backbone.View.call(this, _.omit(options, 'model', 'collection'));
-                this.modifyViewsState(_.pick(options, stateOptions));
                 _(this.views).each(function (views) {
                     _(views).each(function (view) {
                         if (view.isWaiting()) {
-                            self.listenToOnce(view, 'esencia:resolve', self.wait());
+                            self.listenToOnce(view, 'resolved', self.wait());
                         }
                     });
                 });
@@ -566,10 +571,16 @@
                 if (this.model) {
                     this.delegateEntityEvents('models', '', this.model);
                 }
+                if (!this.isWaiting()) {
+                    this.initialized = true;
+                    _.defer(function () {
+                        self.trigger('initialized');
+                    });
+                }
             };
-            View.modifyState = function (state, options) {
+            View.updateState = function (state, options) {
                 state = _({}).defaults(state, { data: {} });
-                options = _({}).defaults(options, { render: true });
+                options = _({}).defaults(options, { apply: true });
                 var self = this;
                 _(stateOptions).each(function (stateOption) {
                     if (!_.has(state, stateOption))
@@ -615,24 +626,44 @@
                         }
                     });
                 });
-                if (options.render) {
-                    this.modifyViewsState(state, options);
-                } else {
-                    this.loadState();
+                if (options.apply) {
+                    this.applyState();
                 }
                 return this;
             };
-            View.loadState = function () {
+            View.applyState = function () {
                 var stateChanged = false;
                 if (this.template) {
-                    var templateData = this.getTemplateData();
+                    var templateData = _.clone(this.getTemplateData());
                     stateChanged = !this.isStatesEqual(this.templateData, templateData);
                     if (stateChanged)
                         this.templateData = templateData;
                 }
                 return stateChanged;
             };
-            View.modifyViewsState = function () {
+            View._update = function () {
+            };
+            View.update = function (state) {
+                if (!this.initialized) {
+                    throw new Error('Method .update() is not available while view is not initialized');
+                }
+                var self = this;
+                this.waitAvailable = true;
+                this.updateState(state, { apply: false });
+                this._update(state);
+                _(this.views).each(function (views) {
+                    _(views).each(function (view) {
+                        if (view.isWaiting()) {
+                            self.listenToOnce(view, 'resolved', self.wait());
+                        }
+                    });
+                });
+                this.waitAvailable = false;
+                if (!this.isWaiting()) {
+                    _.defer(function () {
+                        self.trigger('updated');
+                    });
+                }
                 return this;
             };
             View.isStatesEqual = function (oldState, newState) {
@@ -640,36 +671,41 @@
             };
             View.wait = function () {
                 if (!this.waitAvailable) {
-                    throw new Error('Method .wait() is available only in the constructor');
+                    throw new Error('Method .wait() is not available');
                 }
                 var self = this;
-                this.waitsCounter++;
-                this.trigger('esencia:wait');
+                ++this.waitsCounter;
                 return _.once(function () {
                     _.defer(function () {
-                        self.waitsCounter--;
-                        if (!self.isWaiting()) {
-                            self.trigger('esencia:resolve');
+                        --self.waitsCounter;
+                        if (self.isWaiting())
+                            return;
+                        if (self.initialized) {
+                            self.trigger('updated');
+                        } else {
+                            self.initialized = true;
+                            self.trigger('initialized');
                         }
+                        self.trigger('resolved');
                     });
                 });
             };
             View.isWaiting = function () {
                 return this.waitsCounter > 0;
             };
-            View._render = function (options) {
-                if (this.isWaiting())
+            View.render = function (options) {
+                if (!this.initialized)
                     return this;
                 options = options || {};
                 if (this.template) {
-                    var stateChanged = this.loadState();
+                    var stateChanged = this.applyState();
                     if (options.force || !this.attached || stateChanged) {
                         this.detachViews(options);
                         this.detach();
                         var locals = _(this).chain().result('templateHelpers').extend(this.templateData).value();
-                        var html = this.renderTemplate(this.template, locals);
+                        var html = this._renderTemplate(this.template, locals);
                         if (!_.isString(html)) {
-                            throw new Error('`renderTemplate` method should return a HTML string');
+                            throw new Error('`_renderTemplate` method should return a HTML string');
                         }
                         var $el = $(html);
                         if (!$el.length) {
@@ -684,7 +720,7 @@
                     if (!this.$el.length)
                         this._ensureElement();
                 }
-                this.trigger('esencia:render');
+                this.trigger('render');
                 this.renderViews(options);
                 if (!this.parent || this.$el.parent().length) {
                     this.attachViews(options);
@@ -692,13 +728,10 @@
                 }
                 return this;
             };
-            View.render = function (options) {
-                return this._render(options);
-            };
             View.getTemplateData = function () {
                 return {};
             };
-            View.renderTemplate = function (template, locals) {
+            View._renderTemplate = function (template, locals) {
                 if (!_.isFunction(template)) {
                     throw new Error('View `template` should be a function');
                 }
@@ -1024,7 +1057,7 @@
                 if (this.attached)
                     return this;
                 this.beforeAttach();
-                this.trigger('esencia:beforeAttach');
+                this.trigger('beforeAttach');
                 var previousView = this.$el.data('esencia-view');
                 if (previousView) {
                     previousView.detachViews();
@@ -1035,7 +1068,7 @@
                 this.delegateTriggers();
                 this.attached = true;
                 this.afterAttach();
-                this.trigger('esencia:afterAttach');
+                this.trigger('afterAttach');
                 return this;
             };
             View.detachViews = function (options) {
@@ -1061,13 +1094,13 @@
             View.detach = function () {
                 if (!this.attached)
                     return this;
-                this.trigger('esencia:beforeDetach');
+                this.trigger('beforeDetach');
                 this.beforeDetach();
                 this.$el.removeData('esencia-view').removeAttr('esencia-view');
                 this.undelegateEvents();
                 this.undelegateTriggers();
                 this.attached = false;
-                this.trigger('esencia:afterDetach');
+                this.trigger('afterDetach');
                 this.afterDetach();
                 return this;
             };
