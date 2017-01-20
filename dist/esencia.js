@@ -437,7 +437,7 @@
                 backbone.Router.apply(this, arguments);
                 if (this.autoloadModules) {
                     this.route('*url', function (params) {
-                        this.loadModule(params.url);
+                        this.loadModule();
                     });
                 }
             };
@@ -518,7 +518,7 @@
                 }
             };
             Router.getModuleName = function (fragment) {
-                return _(fragment.split('/')).find(_.identity) || this.defaultModuleName;
+                return _(fragment.split(/(\/|\?)/)).find(_.identity) || this.defaultModuleName;
             };
             module.exports = backbone.Router.extend(Router);
         },
